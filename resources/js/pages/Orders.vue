@@ -606,7 +606,6 @@ const loadOrders = async () => {
     }
     
     const response = await axios.get('/api/orders', { params })
-    console.log('Phản hồi API:', response.data)
     
     if (response.data.success) {
       orders.value = response.data.data.data.orders || []
@@ -780,11 +779,6 @@ const viewOrder = async (order) => {
     })
     
     // Debug log để xem response structure
-    console.log('🔍 Order Details Response:', response.data)
-    console.log('🔍 Data structure:', response.data.data)
-    console.log('🔍 Nested data:', response.data.data?.data)
-    console.log('🔍 Orders array:', response.data.data?.data?.orders)
-    console.log('🔍 Orders length:', response.data.data?.data?.orders?.length)
     
     if (response.data.success) {
       // Kiểm tra xem có orders không và orders có dữ liệu không

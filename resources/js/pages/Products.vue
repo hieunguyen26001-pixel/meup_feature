@@ -289,9 +289,20 @@ export default {
       loading.value = true
       try {
         // Get shop_id from query params or localStorage
-        const shopId = route.query.shop_id || localStorage.getItem('selectedShop')
+        let shopId = route.query.shop_id
+        if (!shopId) {
+          const selectedShopData = localStorage.getItem('selectedShop')
+          if (selectedShopData) {
+            try {
+              const shopData = JSON.parse(selectedShopData)
+              shopId = shopData.shop_id
+            } catch (e) {
+              console.error('Error parsing selectedShop:', e)
+              shopId = selectedShopData // fallback to raw value
+            }
+          }
+        }
         
-        console.log('Loading products for shop:', shopId)
         
         // Store shop info
         selectedShop.value = shopId || ''
@@ -299,7 +310,6 @@ export default {
         const params = shopId ? { shop_id: shopId } : {}
         
         const response = await axios.get('/api/products', { params })
-        console.log('API Response:', response.data)
         
         if (response.data.success) {
           // Handle TikTok API response structure
@@ -319,28 +329,15 @@ export default {
           if (productsData && Array.isArray(productsData)) {
             products.value = productsData
             totalProducts.value = productsData.length
-            console.log(`✅ Loaded ${productsData.length} products from TikTok Shop`)
             
             // Reset to first page when loading new data
             currentPage.value = 1
             
-            // Log first product for debugging
-            if (productsData.length > 0) {
-              console.log('📦 Sample product:', {
-                id: productsData[0].id,
-                title: productsData[0].title,
-                status: productsData[0].status,
-                skus_count: productsData[0].skus?.length || 0,
-                first_sku: productsData[0].skus?.[0]?.seller_sku || 'N/A'
-              })
-            }
           } else {
-            console.warn('❌ No products found in response:', response.data)
             products.value = []
             totalProducts.value = 0
           }
         } else {
-          console.error('API returned error:', response.data.error)
           products.value = []
           
           // Show user-friendly error message

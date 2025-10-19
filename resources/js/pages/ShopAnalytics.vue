@@ -611,18 +611,15 @@ export default {
 
     const getCurrentShop = () => {
       const selectedShop = localStorage.getItem('selectedShop')
-      console.log('Raw selectedShop from localStorage:', selectedShop)
       if (selectedShop) {
         try {
           const parsed = JSON.parse(selectedShop)
-          console.log('Parsed selectedShop:', parsed)
           return parsed
         } catch (e) {
           console.error('Lỗi khi parse selectedShop:', e)
           return null
         }
       }
-      console.log('No selectedShop found in localStorage')
       return null
     }
 
@@ -638,7 +635,6 @@ export default {
         
         if (data.success) {
           availableShops.value = data.data || []
-          console.log('Loaded shops:', availableShops.value)
         } else {
           console.error('Lỗi khi tải danh sách shop:', data.error)
         }
@@ -655,11 +651,9 @@ export default {
         if (shop) {
           currentShop.value = shop
           localStorage.setItem('selectedShop', JSON.stringify(shop))
-          console.log('Selected shop:', shop)
           
           // Auto load video data if on videos tab
           if (activeTab.value === 'videos') {
-            console.log('Auto-loading video data for selected shop...')
             loadVideoAnalytics()
           }
         }
@@ -684,10 +678,7 @@ export default {
         const data = await response.json()
         
         if (data.ok) {
-          console.log('Video API Response:', data)
-          console.log('Video data path:', data.data?.data?.data?.videos)
           videos.value = data.data?.data?.data?.videos || []
-          console.log('Videos array:', videos.value)
           
           // Update pagination info
           videoPagination.value.total = videos.value.length
@@ -729,7 +720,6 @@ export default {
         avgCtr
       }
       
-      console.log('Calculated video stats:', videoStats.value)
     }
 
     // Pagination methods
@@ -752,7 +742,6 @@ export default {
         await loadVideoAnalytics()
       } else {
         // TODO: Implement other tabs
-        console.log('Refreshing data for tab:', activeTab.value)
       }
     }
 
@@ -800,13 +789,11 @@ export default {
     // Watch for tab changes to auto-load data
     watch(activeTab, (newTab) => {
       if (newTab === 'videos' && currentShop.value) {
-        console.log('Switched to videos tab, auto-loading data...')
         loadVideoAnalytics()
       }
     })
 
     onMounted(() => {
-      console.log('ShopAnalytics component mounted')
       loadCurrentShop()
       // Auto load shops on mount
       loadShops()

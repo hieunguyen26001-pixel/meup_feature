@@ -45,10 +45,6 @@ class OrderApiController extends Controller
             // Fetch orders from TikTok API
             try {
                 $orders = $this->fetchOrdersFromTikTok($shopId, $request);
-                Log::info('Orders API success from TikTok', [
-                    'shop_id' => $shopId,
-                    'orders_count' => count($orders['data']['orders'] ?? [])
-                ]);
             } catch (\Exception $e) {
                 Log::error('Orders API failed', [
                     'shop_id' => $shopId,
@@ -242,12 +238,6 @@ class OrderApiController extends Controller
         // Use Order Details API endpoint with specific order ID
         $url = 'https://open-api.tiktokglobalshop.com/order/202507/orders?' . http_build_query($signatureData['signed_query']);
 
-        // Debug log
-        Log::info('Order Details API Request', [
-            'url' => $url,
-            'order_id' => $orderId,
-            'shop_cipher' => $shop->seller_cipher
-        ]);
 
         // Make API request
         $response = Http::withHeaders([
@@ -261,13 +251,6 @@ class OrderApiController extends Controller
 
         $data = $response->json();
         
-        // Debug log response
-        Log::info('Order Details API Response', [
-            'order_id' => $orderId,
-            'response_code' => $data['code'] ?? 'unknown',
-            'orders_count' => count($data['data']['orders'] ?? []),
-            'total_count' => $data['data']['total_count'] ?? 0
-        ]);
         
         if (!$data || !isset($data['code']) || $data['code'] !== 0) {
             throw new \Exception('API trả về lỗi: ' . json_encode($data));

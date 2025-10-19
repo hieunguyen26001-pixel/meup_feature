@@ -196,13 +196,6 @@ class ShopAnalyticsController extends Controller
         // Build URL
         $url = 'https://open-api.tiktokglobalshop.com/analytics/202409/shop_videos/performance?' . http_build_query($signatureData['signed_query']);
 
-        // Debug log
-        Log::info('Video Performance API Request', [
-            'url' => $url,
-            'shop_id' => $shopId,
-            'shop_cipher' => $shop->seller_cipher,
-            'params' => $params
-        ]);
 
         // Make API request
         $response = Http::withHeaders([
@@ -216,13 +209,6 @@ class ShopAnalyticsController extends Controller
 
         $data = $response->json();
         
-        // Debug log
-        Log::info('Video Performance API Response', [
-            'shop_id' => $shopId,
-            'response_code' => $data['code'] ?? null,
-            'videos_count' => count($data['data']['videos'] ?? []),
-            'total_count' => $data['data']['total_count'] ?? null,
-        ]);
 
         if (!$data || !isset($data['code']) || $data['code'] !== 0) {
             throw new \Exception('API trả về lỗi: ' . json_encode($data));

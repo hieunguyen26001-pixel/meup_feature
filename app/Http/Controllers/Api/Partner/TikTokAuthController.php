@@ -1,15 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Partner;
 
-use App\Http\Controllers\Controller;
+use App\Models\OAuthState;
+use App\Models\ProviderToken;
+use App\Models\Shop;
 use App\Services\TikTokShopTokenService;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
-class TikTokAuthController extends Controller
+class TikTokAuthController extends BasePartnerController
 {
-    protected $tokenService;
+    use ApiResponseTrait;
+
+    protected TikTokShopTokenService $tokenService;
 
     public function __construct(TikTokShopTokenService $tokenService)
     {
@@ -17,194 +28,246 @@ class TikTokAuthController extends Controller
     }
 
     /**
-     * Generate TikTok Shop authorization URL
+     * Generate authorization URL
      */
-    public function authorize(Request $request)
+    public function getAuthUrl(Request $request): JsonResponse
     {
         try {
-            $appKey = config('services.tiktok_shop.client_key');
-            $redirectUri = config('services.tiktok_shop.redirect_uri');
-            $state = bin2hex(random_bytes(16));
+            $this->validateRequiredParams($request, ['shop_id']);
 
-            // Save state to database for CSRF protection
-            \App\Models\OauthState::create([
-                'provider' => 'SHOP',
+            $shopId = $request->get('shop_id');
+            $state = Str::random(32);
+
+            // Store state in database
+            OAuthState::create([
                 'state' => $state,
-                'redirect' => $request->get('redirect', '/vue#/admin/products'),
-                'expires_at' => now()->addMinutes(10)
+                'shop_id' => $shopId,
+                'expires_at' => now()->addMinutes(10),
             ]);
 
-            $authUrl = "https://auth.tiktok-shops.com/oauth/authorize/seller?" . http_build_query([
-                'app_key' => $appKey,
-                'redirect_uri' => $redirectUri,
-                'tts_state' => $state
-            ]);
+            $authUrl = $this->buildAuthUrl($state);
 
-            return response()->json([
-                'success' => true,
+            return $this->successResponse([
                 'auth_url' => $authUrl,
-                'state' => $state
+                'state' => $state,
+                'expires_in' => 600,
             ]);
 
+        } catch (ValidationException $e) {
+            return $this->validationError($e->getMessage());
         } catch (\Exception $e) {
-            Log::error('TikTok authorization URL generation failed', [
-                'error' => $e->getMessage()
+            Log::error('Failed to generate auth URL', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Không thể tạo liên kết ủy quyền: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse('API_ERROR', 'Không thể tạo URL ủy quyền', null, [], 500);
         }
     }
 
     /**
-     * Handle TikTok Shop OAuth callback
+     * Handle authorization callback
      */
-    public function callback(Request $request)
+    public function handleCallback(Request $request): JsonResponse
     {
         try {
+            $this->validateRequiredParams($request, ['code', 'state']);
+
             $code = $request->get('code');
             $state = $request->get('state');
-            $error = $request->get('error');
 
-            // Check for errors
-            if ($error) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'OAuth error: ' . $error
-                ], 400);
-            }
-
-            // Validate state
-            $oauthState = \App\Models\OauthState::where('state', $state)
+            // Verify state
+            $oauthState = OAuthState::where('state', $state)
                 ->where('expires_at', '>', now())
                 ->first();
 
-            if (!$oauthState) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Invalid or expired state parameter'
-                ], 400);
+            if (! $oauthState) {
+                return $this->validationError('State không hợp lệ hoặc đã hết hạn');
             }
+
+            $shopId = $oauthState->shop_id;
 
             // Exchange code for token
-            $tokenData = $this->tokenService->exchangeCodeForToken($code);
-            
-            if (!$tokenData) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Token exchange failed'
-                ], 500);
-            }
+            $tokenData = $this->exchangeCodeForToken($code);
 
-            // Get shop info
-            $shopInfo = $this->tokenService->getShopInfo($tokenData['access_token']);
-            
-            if (!$shopInfo || $shopInfo['code'] !== 0) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Get shop info failed: ' . json_encode($shopInfo)
-                ], 500);
-            }
-
-            // Extract shop data from TikTok API response
-            $shopData = $this->extractShopDataFromResponse($shopInfo, $tokenData);
-            
-            // Save shop info
-            $shop = \App\Models\Shop::upsertFromTikTok($shopData, $tokenData);
-
-            // Save token to ProviderToken table
-            \App\Models\ProviderToken::updateOrCreate(
-                [
-                    'provider' => 'SHOP',
-                    'subject_id' => $shopData['shop_id']
-                ],
-                [
-                    'access_token' => $tokenData['access_token'],
-                    'refresh_token' => $tokenData['refresh_token'],
-                    'expires_at' => now()->addSeconds($tokenData['access_token_expire_in']),
-                    'refresh_expires_at' => now()->addSeconds($tokenData['refresh_token_expire_in']),
-                    'scopes' => $tokenData['granted_scopes'] ?? [],
-                    'metadata' => [
-                        'seller_name' => $tokenData['seller_name'] ?? null,
-                        'seller_base_region' => $tokenData['seller_base_region'] ?? null,
-                        'user_type' => $tokenData['user_type'] ?? null,
-                        'open_id' => $tokenData['open_id'] ?? null,
-                    ]
-                ]
-            );
+            // Store token in database
+            $this->storeToken($shopId, $tokenData);
 
             // Clean up state
             $oauthState->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Ủy quyền thành công!',
-                'shop' => [
-                    'id' => $shop->id,
-                    'shop_id' => $shop->shop_id,
-                    'name' => $shop->shop_name,
-                    'region' => $shop->region,
-                    'seller_type' => $shop->seller_type
-                ],
-                'redirect' => $oauthState->redirect
+            return $this->successResponse([
+                'message' => 'Ủy quyền thành công',
+                'shop_id' => $shopId,
+                'expires_at' => $tokenData['expires_at'] ?? null,
             ]);
 
+        } catch (ValidationException $e) {
+            return $this->validationError($e->getMessage());
         } catch (\Exception $e) {
-            Log::error('TikTok OAuth callback failed', [
+            Log::error('Failed to handle auth callback', [
                 'error' => $e->getMessage(),
-                'request' => $request->all()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Xử lý callback thất bại: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse('API_ERROR', 'Xử lý callback thất bại', null, [], 500);
         }
     }
 
     /**
-     * Extract shop data from TikTok API response
+     * Get authorization status
      */
-    private function extractShopDataFromResponse(array $shopInfo, array $tokenData): array
+    public function getStatus(Request $request): JsonResponse
     {
-        // TikTok Shop API response structure:
-        // {
-        //   "code": 0,
-        //   "data": {
-        //     "shops": [
-        //       {
-        //         "id": "7496239622529452872",
-        //         "name": "Maomao beauty shop",
-        //         "region": "GB",
-        //         "seller_type": "CROSS_BORDER",
-        //         "cipher": "GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3",
-        //         "code": "CNGBCBA4LLU8"
-        //       }
-        //     ]
-        //   }
-        // }
+        try {
+            $this->validateRequiredParams($request, ['shop_id']);
 
-        $shops = $shopInfo['data']['shops'] ?? [];
-        if (empty($shops)) {
-            throw new \Exception('No shops found in TikTok API response');
+            $shopId = $request->get('shop_id');
+            $shop = Shop::where('shop_id', $shopId)->first();
+
+            if (! $shop) {
+                return $this->notFoundError('Shop không tồn tại');
+            }
+
+            $token = ProviderToken::where('shop_id', $shopId)
+                ->where('provider', 'tiktok_shop')
+                ->where('expires_at', '>', now())
+                ->first();
+
+            $isAuthorized = $token !== null;
+            $expiresAt = $token?->expires_at;
+
+            return $this->successResponse([
+                'shop_id' => $shopId,
+                'is_authorized' => $isAuthorized,
+                'expires_at' => $expiresAt,
+                'scopes' => $token?->scopes ?? [],
+            ]);
+
+        } catch (ValidationException $e) {
+            return $this->validationError($e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Failed to get auth status', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse('API_ERROR', 'Không thể lấy trạng thái ủy quyền', null, [], 500);
+        }
+    }
+
+    /**
+     * Revoke authorization
+     */
+    public function revoke(Request $request): JsonResponse
+    {
+        try {
+            $this->validateRequiredParams($request, ['shop_id']);
+
+            $shopId = $request->get('shop_id');
+
+            DB::transaction(function () use ($shopId) {
+                // Delete tokens
+                ProviderToken::where('shop_id', $shopId)
+                    ->where('provider', 'tiktok_shop')
+                    ->delete();
+
+                // Update shop status
+                Shop::where('shop_id', $shopId)
+                    ->update(['is_active' => false]);
+            });
+
+            return $this->successResponse([
+                'message' => 'Hủy ủy quyền thành công',
+                'shop_id' => $shopId,
+            ]);
+
+        } catch (ValidationException $e) {
+            return $this->validationError($e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Failed to revoke authorization', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse('API_ERROR', 'Hủy ủy quyền thất bại', null, [], 500);
+        }
+    }
+
+    /**
+     * Build authorization URL
+     */
+    protected function buildAuthUrl(string $state): string
+    {
+        $params = [
+            'client_key' => config('services.tiktok_shop.client_key'),
+            'scope' => implode(',', config('services.tiktok_shop.scopes')),
+            'response_type' => 'code',
+            'redirect_uri' => config('services.tiktok_shop.redirect_uri'),
+            'state' => $state,
+        ];
+
+        return 'https://auth.tiktok-shops.com/oauth/authorize?'.http_build_query($params);
+    }
+
+    /**
+     * Exchange authorization code for access token
+     */
+    protected function exchangeCodeForToken(string $code): array
+    {
+        $response = $this->tokenService->exchangeCodeForToken($code);
+
+        if (! $response || ! isset($response['access_token'])) {
+            throw new \RuntimeException('Không thể lấy access token');
         }
 
-        $shop = $shops[0]; // Get first shop
+        return $response;
+    }
 
-        return [
-            'shop_id' => $shop['id'],
-            'shop_name' => $shop['name'] ?? 'Unknown Shop',
-            'region' => $shop['region'] ?? 'VN',
-            'seller_type' => $shop['seller_type'] ?? null,
-            'seller_cipher' => $shop['cipher'] ?? null,
-            'metadata' => [
-                'shop_code' => $shop['code'] ?? null,
-                'seller_base_region' => $tokenData['seller_base_region'] ?? null,
-                'seller_name' => $tokenData['seller_name'] ?? null,
-                'user_type' => $tokenData['user_type'] ?? null,
-            ]
-        ];
+    /**
+     * Store token in database
+     */
+    protected function storeToken(string $shopId, array $tokenData): void
+    {
+        DB::transaction(function () use ($shopId, $tokenData) {
+            // Delete existing tokens
+            ProviderToken::where('shop_id', $shopId)
+                ->where('provider', 'tiktok_shop')
+                ->delete();
+
+            // Create new token
+            ProviderToken::create([
+                'shop_id' => $shopId,
+                'provider' => 'tiktok_shop',
+                'access_token' => $tokenData['access_token'],
+                'refresh_token' => $tokenData['refresh_token'] ?? null,
+                'expires_at' => now()->addSeconds($tokenData['expires_in'] ?? 3600),
+                'scopes' => $tokenData['scope'] ?? [],
+            ]);
+
+            // Update shop status
+            Shop::where('shop_id', $shopId)
+                ->update(['is_active' => true]);
+        });
+    }
+
+    /**
+     * Validate required parameters
+     */
+    protected function validateRequiredParams(Request $request, array $required): void
+    {
+        $missing = [];
+
+        foreach ($required as $param) {
+            if (! $request->has($param) || $request->get($param) === null) {
+                $missing[] = $param;
+            }
+        }
+
+        if (! empty($missing)) {
+            throw ValidationException::withMessages([
+                'required' => 'Thiếu các tham số bắt buộc: '.implode(', ', $missing),
+            ]);
+        }
     }
 }

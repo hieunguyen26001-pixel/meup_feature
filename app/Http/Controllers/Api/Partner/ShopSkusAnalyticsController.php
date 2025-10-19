@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers\Api\Partner;
 
-use App\Http\Controllers\Controller;
 use App\Services\TikTokShopTokenService;
 use App\Traits\ApiResponseTrait;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
-class ShopSkusAnalyticsController extends Controller
+class ShopSkusAnalyticsController extends BasePartnerController
 {
     use ApiResponseTrait;
 
@@ -24,9 +22,6 @@ class ShopSkusAnalyticsController extends Controller
 
     /**
      * Get shop SKUs performance analytics
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSkusPerformance(Request $request): JsonResponse
     {
@@ -50,20 +45,20 @@ class ShopSkusAnalyticsController extends Controller
 
             // Get active shop
             $shop = $this->tokenService->getActiveShop();
-            if (!$shop) {
-                return $this->errorResponse('Không có shop nào được ủy quyền', 400);
+            if (! $shop) {
+                return $this->validationError('Không có shop nào được ủy quyền');
             }
 
             // Get valid access token
             $token = $this->tokenService->getValidToken($shop->shop_id);
-            if (!$token) {
-                return $this->errorResponse('Không có token hợp lệ cho shop này', 401);
+            if (! $token) {
+                return $this->errorResponse('UNAUTHORIZED', 'Không có token hợp lệ cho shop này', 'Vui lòng ủy quyền lại');
             }
 
             // Build TikTok Shop API URL
             $baseUrl = 'https://open-api.tiktokglobalshop.com';
             $endpoint = '/analytics/202406/shop_skus/performance';
-            
+
             // Build query parameters
             $queryParams = [
                 'sort_field' => $sortField,
@@ -93,24 +88,26 @@ class ShopSkusAnalyticsController extends Controller
             $response = Http::withHeaders([
                 'x-tts-access-token' => $token->access_token,
                 'content-type' => 'application/json',
-            ])->timeout(30)->get($baseUrl . $endpoint, $queryParams);
+            ])->timeout(30)->get($baseUrl.$endpoint, $queryParams);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('TikTok Shop SKUs Analytics API Error', [
                     'shop_id' => $shop->shop_id,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'query_params' => $queryParams
+                    'query_params' => $queryParams,
                 ]);
 
                 return $this->errorResponse(
-                    'Lỗi khi gọi TikTok Shop API: ' . $response->status(),
-                    500,
+                    'TIKTOK_API_ERROR',
+                    'Lỗi khi gọi TikTok Shop API: '.$response->status(),
+                    'Kiểm tra shop_cipher và app_key có đúng không',
                     [
                         'shop_id' => $shop->shop_id,
                         'error_type' => 'TikTok_API_Error',
-                        'suggestion' => 'Kiểm tra shop_cipher và app_key có đúng không'
-                    ]
+                        'suggestion' => 'Kiểm tra shop_cipher và app_key có đúng không',
+                    ],
+                    500
                 );
             }
 
@@ -125,46 +122,45 @@ class ShopSkusAnalyticsController extends Controller
                     'next_page_token' => $transformedData['next_page_token'] ?? null,
                     'total_count' => $transformedData['total_count'] ?? 0,
                     'page_size' => $pageSize,
-                    'has_more' => !empty($transformedData['next_page_token'])
+                    'has_more' => ! empty($transformedData['next_page_token']),
                 ],
                 'date_range' => [
                     'start_date' => $request->get('start_date_ge'),
                     'end_date' => $request->get('end_date_lt'),
-                    'latest_available_date' => $transformedData['latest_available_date'] ?? null
+                    'latest_available_date' => $transformedData['latest_available_date'] ?? null,
                 ],
                 'filters' => [
                     'sort_field' => $sortField,
                     'sort_order' => $sortOrder,
                     'currency' => $currency,
-                    'product_id' => $productId
-                ]
-            ], $shop->shop_id, 'tiktok_api');
+                    'product_id' => $productId,
+                ],
+            ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: ' . implode(', ', $e->errors()), 422);
+            return $this->validationError('Dữ liệu đầu vào không hợp lệ: '.implode(', ', $e->errors()));
         } catch (\Exception $e) {
             Log::error('Shop SKUs Analytics Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
             ]);
 
             return $this->errorResponse(
-                'Lỗi hệ thống: ' . $e->getMessage(),
-                500,
+                'API_ERROR',
+                'Lỗi hệ thống: '.$e->getMessage(),
+                'Vui lòng thử lại sau hoặc liên hệ admin',
                 [
                     'error_type' => 'System_Error',
-                    'suggestion' => 'Vui lòng thử lại sau hoặc liên hệ admin'
-                ]
+                    'suggestion' => 'Vui lòng thử lại sau hoặc liên hệ admin',
+                ],
+                500
             );
         }
     }
 
     /**
      * Get SKU performance summary
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSkusSummary(Request $request): JsonResponse
     {
@@ -179,8 +175,8 @@ class ShopSkusAnalyticsController extends Controller
             // Get all SKUs data (with large page size)
             $request->merge(['page_size' => 100]);
             $performanceResponse = $this->getSkusPerformance($request);
-            
-            if (!$performanceResponse->getData()->success) {
+
+            if (! $performanceResponse->getData()->success) {
                 return $performanceResponse;
             }
 
@@ -193,24 +189,21 @@ class ShopSkusAnalyticsController extends Controller
             return $this->successResponse([
                 'summary' => $summary,
                 'date_range' => $data->date_range,
-                'total_skus' => count($skus)
-            ], $data->shop_id ?? null, 'tiktok_api');
+                'total_skus' => count($skus),
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Shop SKUs Summary Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->errorResponse('Lỗi khi tính toán summary: ' . $e->getMessage(), 500);
+            return $this->errorResponse('API_ERROR', 'Lỗi khi tính toán summary: '.$e->getMessage(), null, [], 500);
         }
     }
 
     /**
      * Get top performing SKUs
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTopSkus(Request $request): JsonResponse
     {
@@ -220,21 +213,21 @@ class ShopSkusAnalyticsController extends Controller
                 'end_date_lt' => 'required|date|date_format:Y-m-d|after:start_date_ge',
                 'shop_cipher' => 'required|string',
                 'app_key' => 'required|string',
-                'limit' => 'integer|min:1|max:50'
+                'limit' => 'integer|min:1|max:50',
             ]);
 
             $limit = $request->get('limit', 10);
-            
+
             // Get SKUs performance data
             $request->merge([
                 'page_size' => $limit,
                 'sort_field' => 'gmv',
-                'sort_order' => 'DESC'
+                'sort_order' => 'DESC',
             ]);
-            
+
             $performanceResponse = $this->getSkusPerformance($request);
-            
-            if (!$performanceResponse->getData()->success) {
+
+            if (! $performanceResponse->getData()->success) {
                 return $performanceResponse;
             }
 
@@ -242,36 +235,34 @@ class ShopSkusAnalyticsController extends Controller
             $skus = $data->skus_performance ?? [];
 
             // Add ranking
-            $rankedSkus = array_map(function($sku, $index) {
+            $rankedSkus = array_map(function ($sku, $index) {
                 $sku['rank'] = $index + 1;
+
                 return $sku;
             }, $skus, array_keys($skus));
 
             return $this->successResponse([
                 'top_skus' => $rankedSkus,
                 'date_range' => $data->date_range,
-                'total_found' => count($skus)
-            ], $data->shop_id ?? null, 'tiktok_api');
+                'total_found' => count($skus),
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Top SKUs Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy top SKUs: ' . $e->getMessage(), 500);
+            return $this->errorResponse('API_ERROR', 'Lỗi khi lấy top SKUs: '.$e->getMessage(), null, [], 500);
         }
     }
 
     /**
      * Transform TikTok Shop API response data
-     *
-     * @param array $data
-     * @return array
      */
     private function transformSkusPerformanceData(array $data): array
     {
-        if (!isset($data['data']['skus'])) {
+        if (! isset($data['data']['skus'])) {
             return $data['data'] ?? [];
         }
 
@@ -288,18 +279,18 @@ class ShopSkusAnalyticsController extends Controller
                     'formatted' => $this->formatCurrency(
                         floatval($sku['gmv']['amount'] ?? 0),
                         $sku['gmv']['currency'] ?? 'USD'
-                    )
+                    ),
                 ],
                 'orders' => [
                     'count' => intval($sku['sku_orders'] ?? 0),
-                    'formatted' => number_format($sku['sku_orders'] ?? 0)
+                    'formatted' => number_format($sku['sku_orders'] ?? 0),
                 ],
                 'units_sold' => [
                     'count' => intval($sku['units_sold'] ?? 0),
-                    'formatted' => number_format($sku['units_sold'] ?? 0)
+                    'formatted' => number_format($sku['units_sold'] ?? 0),
                 ],
                 'average_order_value' => $this->calculateAOV($sku),
-                'conversion_rate' => $this->calculateConversionRate($sku)
+                'conversion_rate' => $this->calculateConversionRate($sku),
             ];
         }
 
@@ -307,15 +298,12 @@ class ShopSkusAnalyticsController extends Controller
             'skus' => $transformedSkus,
             'next_page_token' => $data['data']['next_page_token'] ?? null,
             'total_count' => $data['data']['total_count'] ?? 0,
-            'latest_available_date' => $data['data']['latest_available_date'] ?? null
+            'latest_available_date' => $data['data']['latest_available_date'] ?? null,
         ];
     }
 
     /**
      * Calculate summary statistics for SKUs
-     *
-     * @param array $skus
-     * @return array
      */
     private function calculateSkusSummary(array $skus): array
     {
@@ -328,7 +316,7 @@ class ShopSkusAnalyticsController extends Controller
                 'average_orders_per_sku' => 0,
                 'average_units_per_sku' => 0,
                 'top_sku' => null,
-                'total_skus' => 0
+                'total_skus' => 0,
             ];
         }
 
@@ -360,27 +348,24 @@ class ShopSkusAnalyticsController extends Controller
             'total_gmv' => [
                 'amount' => $totalGmv,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($totalGmv, $currency)
+                'formatted' => $this->formatCurrency($totalGmv, $currency),
             ],
             'total_orders' => $totalOrders,
             'total_units_sold' => $totalUnits,
             'average_gmv_per_sku' => [
                 'amount' => $skuCount > 0 ? $totalGmv / $skuCount : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($skuCount > 0 ? $totalGmv / $skuCount : 0, $currency)
+                'formatted' => $this->formatCurrency($skuCount > 0 ? $totalGmv / $skuCount : 0, $currency),
             ],
             'average_orders_per_sku' => $skuCount > 0 ? round($totalOrders / $skuCount, 2) : 0,
             'average_units_per_sku' => $skuCount > 0 ? round($totalUnits / $skuCount, 2) : 0,
             'top_sku' => $topSku,
-            'total_skus' => $skuCount
+            'total_skus' => $skuCount,
         ];
     }
 
     /**
      * Calculate Average Order Value for SKU
-     *
-     * @param array $sku
-     * @return array
      */
     private function calculateAOV(array $sku): array
     {
@@ -393,15 +378,12 @@ class ShopSkusAnalyticsController extends Controller
         return [
             'amount' => $aov,
             'currency' => $currency,
-            'formatted' => $this->formatCurrency($aov, $currency)
+            'formatted' => $this->formatCurrency($aov, $currency),
         ];
     }
 
     /**
      * Calculate conversion rate for SKU
-     *
-     * @param array $sku
-     * @return float
      */
     private function calculateConversionRate(array $sku): float
     {
@@ -413,10 +395,6 @@ class ShopSkusAnalyticsController extends Controller
 
     /**
      * Format currency amount
-     *
-     * @param float $amount
-     * @param string $currency
-     * @return string
      */
     private function formatCurrency(float $amount, string $currency = 'USD'): string
     {
@@ -424,31 +402,28 @@ class ShopSkusAnalyticsController extends Controller
             'USD' => '$',
             'VND' => '₫',
             'EUR' => '€',
-            'GBP' => '£'
+            'GBP' => '£',
         ];
 
-        $symbol = $symbols[$currency] ?? $currency . ' ';
-        return $symbol . number_format($amount, 2);
+        $symbol = $symbols[$currency] ?? $currency.' ';
+
+        return $symbol.number_format($amount, 2);
     }
 
     /**
      * Generate signature for TikTok Shop API
      * Note: This is a simplified version. In production, implement proper HMAC-SHA256
-     *
-     * @param array $params
-     * @param string $secret
-     * @return string
      */
     private function generateSignature(array $params, string $secret): string
     {
         // Sort parameters
         ksort($params);
-        
+
         // Create query string
         $queryString = http_build_query($params);
-        
+
         // In production, implement proper HMAC-SHA256 signature
         // For now, return a mock signature
-        return hash('sha256', $queryString . $secret);
+        return hash('sha256', $queryString.$secret);
     }
 }

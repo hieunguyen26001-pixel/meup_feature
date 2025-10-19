@@ -22,9 +22,21 @@ class ProviderToken extends Model
         'refresh_expires_at',
     ];
 
+    /**
+     * @var string|null
+     */
+    public $access_token;
+
+    /**
+     * @var string|null
+     */
+    public $refresh_token;
+
     protected $casts = [
         'expires_at' => 'datetime',
         'refresh_expires_at' => 'datetime',
+        'access_token' => 'string',
+        'refresh_token' => 'string',
     ];
 
     /**

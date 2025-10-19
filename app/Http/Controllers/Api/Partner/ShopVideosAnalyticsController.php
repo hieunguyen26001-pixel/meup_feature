@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\Partner;
 use App\Http\Controllers\Controller;
 use App\Services\TikTokShopTokenService;
 use App\Traits\ApiResponseTrait;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class ShopVideosAnalyticsController extends Controller
 {
@@ -24,9 +24,6 @@ class ShopVideosAnalyticsController extends Controller
 
     /**
      * Get shop videos performance analytics
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getVideosPerformance(Request $request): JsonResponse
     {
@@ -50,20 +47,20 @@ class ShopVideosAnalyticsController extends Controller
 
             // Get active shop
             $shop = $this->tokenService->getActiveShop();
-            if (!$shop) {
+            if (! $shop) {
                 return $this->errorResponse('Không có shop nào được ủy quyền', 400);
             }
 
             // Get valid access token
             $token = $this->tokenService->getValidToken($shop->shop_id);
-            if (!$token) {
+            if (! $token) {
                 return $this->errorResponse('Không có token hợp lệ cho shop này', 401);
             }
 
             // Build TikTok Shop API URL
             $baseUrl = 'https://open-api.tiktokglobalshop.com';
             $endpoint = '/analytics/202409/shop_videos/performance';
-            
+
             // Build query parameters
             $queryParams = [
                 'start_date_ge' => $request->get('start_date_ge'),
@@ -91,18 +88,18 @@ class ShopVideosAnalyticsController extends Controller
             $response = Http::withHeaders([
                 'x-tts-access-token' => $token->access_token,
                 'content-type' => 'application/json',
-            ])->timeout(30)->get($baseUrl . $endpoint, $queryParams);
+            ])->timeout(30)->get($baseUrl.$endpoint, $queryParams);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('TikTok Shop Videos Analytics API Error', [
                     'shop_id' => $shop->shop_id,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'query_params' => $queryParams
+                    'query_params' => $queryParams,
                 ]);
 
                 return $this->errorResponse(
-                    'Lỗi khi gọi TikTok Shop API: ' . $response->status() . '. Kiểm tra shop_cipher và app_key có đúng không',
+                    'Lỗi khi gọi TikTok Shop API: '.$response->status().'. Kiểm tra shop_cipher và app_key có đúng không',
                     500
                 );
             }
@@ -118,34 +115,34 @@ class ShopVideosAnalyticsController extends Controller
                     'next_page_token' => $transformedData['next_page_token'] ?? null,
                     'total_count' => $transformedData['total_count'] ?? 0,
                     'page_size' => $pageSize,
-                    'has_more' => !empty($transformedData['next_page_token'])
+                    'has_more' => ! empty($transformedData['next_page_token']),
                 ],
                 'date_range' => [
                     'start_date' => $request->get('start_date_ge'),
                     'end_date' => $request->get('end_date_lt'),
-                    'latest_available_date' => $transformedData['latest_available_date'] ?? null
+                    'latest_available_date' => $transformedData['latest_available_date'] ?? null,
                 ],
                 'filters' => [
                     'sort_field' => $sortField,
                     'sort_order' => $sortOrder,
                     'currency' => $currency,
-                    'account_type' => $accountType
+                    'account_type' => $accountType,
                 ],
                 'shop_id' => $shop->shop_id,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: ' . implode(', ', $e->errors()), 422);
+            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: '.implode(', ', $e->errors()), 422);
         } catch (\Exception $e) {
             Log::error('Shop Videos Analytics Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
             ]);
 
             return $this->errorResponse(
-                'Lỗi hệ thống: ' . $e->getMessage() . '. Vui lòng thử lại sau hoặc liên hệ admin',
+                'Lỗi hệ thống: '.$e->getMessage().'. Vui lòng thử lại sau hoặc liên hệ admin',
                 500
             );
         }
@@ -153,9 +150,6 @@ class ShopVideosAnalyticsController extends Controller
 
     /**
      * Get videos performance summary
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getVideosSummary(Request $request): JsonResponse
     {
@@ -170,8 +164,8 @@ class ShopVideosAnalyticsController extends Controller
             // Get all videos data (with large page size)
             $request->merge(['page_size' => 100]);
             $performanceResponse = $this->getVideosPerformance($request);
-            
-            if (!$performanceResponse->getData()->success) {
+
+            if (! $performanceResponse->getData()->success) {
                 return $performanceResponse;
             }
 
@@ -186,24 +180,21 @@ class ShopVideosAnalyticsController extends Controller
                 'date_range' => $data->date_range,
                 'total_videos' => count($videos),
                 'shop_id' => $data->shop_id ?? null,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Shop Videos Summary Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->errorResponse('Lỗi khi tính toán summary: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi tính toán summary: '.$e->getMessage(), 500);
         }
     }
 
     /**
      * Get top performing videos
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTopVideos(Request $request): JsonResponse
     {
@@ -213,21 +204,21 @@ class ShopVideosAnalyticsController extends Controller
                 'end_date_lt' => 'required|date|date_format:Y-m-d|after:start_date_ge',
                 'shop_cipher' => 'required|string',
                 'app_key' => 'required|string',
-                'limit' => 'integer|min:1|max:50'
+                'limit' => 'integer|min:1|max:50',
             ]);
 
             $limit = $request->get('limit', 10);
-            
+
             // Get videos performance data
             $request->merge([
                 'page_size' => $limit,
                 'sort_field' => 'gmv',
-                'sort_order' => 'DESC'
+                'sort_order' => 'DESC',
             ]);
-            
+
             $performanceResponse = $this->getVideosPerformance($request);
-            
-            if (!$performanceResponse->getData()->success) {
+
+            if (! $performanceResponse->getData()->success) {
                 return $performanceResponse;
             }
 
@@ -235,8 +226,9 @@ class ShopVideosAnalyticsController extends Controller
             $videos = $data->videos_performance ?? [];
 
             // Add ranking
-            $rankedVideos = array_map(function($video, $index) {
+            $rankedVideos = array_map(function ($video, $index) {
                 $video['rank'] = $index + 1;
+
                 return $video;
             }, $videos, array_keys($videos));
 
@@ -245,24 +237,21 @@ class ShopVideosAnalyticsController extends Controller
                 'date_range' => $data->date_range,
                 'total_found' => count($videos),
                 'shop_id' => $data->shop_id ?? null,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Top Videos Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy top videos: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy top videos: '.$e->getMessage(), 500);
         }
     }
 
     /**
      * Get videos overview performance
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getVideosOverviewPerformance(Request $request): JsonResponse
     {
@@ -284,20 +273,20 @@ class ShopVideosAnalyticsController extends Controller
 
             // Get active shop
             $shop = $this->tokenService->getActiveShop();
-            if (!$shop) {
+            if (! $shop) {
                 return $this->errorResponse('Không có shop nào được ủy quyền', 400);
             }
 
             // Get valid access token
             $token = $this->tokenService->getValidToken($shop->shop_id);
-            if (!$token) {
+            if (! $token) {
                 return $this->errorResponse('Không có token hợp lệ cho shop này', 401);
             }
 
             // Build TikTok Shop API URL
             $baseUrl = 'https://open-api.tiktokglobalshop.com';
             $endpoint = '/analytics/202409/shop_videos/overview_performance';
-            
+
             // Build query parameters
             $queryParams = [
                 'start_date_ge' => $request->get('start_date_ge'),
@@ -319,18 +308,18 @@ class ShopVideosAnalyticsController extends Controller
             $response = Http::withHeaders([
                 'x-tts-access-token' => $token->access_token,
                 'content-type' => 'application/json',
-            ])->timeout(30)->get($baseUrl . $endpoint, $queryParams);
+            ])->timeout(30)->get($baseUrl.$endpoint, $queryParams);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('TikTok Shop Videos Overview API Error', [
                     'shop_id' => $shop->shop_id,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'query_params' => $queryParams
+                    'query_params' => $queryParams,
                 ]);
 
                 return $this->errorResponse(
-                    'Lỗi khi gọi TikTok Shop API: ' . $response->status() . '. Kiểm tra shop_cipher và app_key có đúng không',
+                    'Lỗi khi gọi TikTok Shop API: '.$response->status().'. Kiểm tra shop_cipher và app_key có đúng không',
                     500
                 );
             }
@@ -346,29 +335,29 @@ class ShopVideosAnalyticsController extends Controller
                 'date_range' => [
                     'start_date' => $request->get('start_date_ge'),
                     'end_date' => $request->get('end_date_lt'),
-                    'latest_available_date' => $transformedData['latest_available_date'] ?? null
+                    'latest_available_date' => $transformedData['latest_available_date'] ?? null,
                 ],
                 'filters' => [
                     'currency' => $currency,
                     'account_type' => $accountType,
                     'with_comparison' => $withComparison,
-                    'granularity' => $granularity
+                    'granularity' => $granularity,
                 ],
                 'shop_id' => $shop->shop_id,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: ' . implode(', ', $e->errors()), 422);
+            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: '.implode(', ', $e->errors()), 422);
         } catch (\Exception $e) {
             Log::error('Shop Videos Overview Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
             ]);
 
             return $this->errorResponse(
-                'Lỗi hệ thống: ' . $e->getMessage() . '. Vui lòng thử lại sau hoặc liên hệ admin',
+                'Lỗi hệ thống: '.$e->getMessage().'. Vui lòng thử lại sau hoặc liên hệ admin',
                 500
             );
         }
@@ -376,10 +365,6 @@ class ShopVideosAnalyticsController extends Controller
 
     /**
      * Get specific video performance by ID
-     *
-     * @param Request $request
-     * @param string $videoId
-     * @return JsonResponse
      */
     public function getVideoPerformanceById(Request $request, string $videoId): JsonResponse
     {
@@ -400,20 +385,20 @@ class ShopVideosAnalyticsController extends Controller
 
             // Get active shop
             $shop = $this->tokenService->getActiveShop();
-            if (!$shop) {
+            if (! $shop) {
                 return $this->errorResponse('Không có shop nào được ủy quyền', 400);
             }
 
             // Get valid access token
             $token = $this->tokenService->getValidToken($shop->shop_id);
-            if (!$token) {
+            if (! $token) {
                 return $this->errorResponse('Không có token hợp lệ cho shop này', 401);
             }
 
             // Build TikTok Shop API URL
             $baseUrl = 'https://open-api.tiktokglobalshop.com';
             $endpoint = "/analytics/202409/shop_videos/{$videoId}/performance";
-            
+
             // Build query parameters
             $queryParams = [
                 'start_date_ge' => $request->get('start_date_ge'),
@@ -434,19 +419,19 @@ class ShopVideosAnalyticsController extends Controller
             $response = Http::withHeaders([
                 'x-tts-access-token' => $token->access_token,
                 'content-type' => 'application/json',
-            ])->timeout(30)->get($baseUrl . $endpoint, $queryParams);
+            ])->timeout(30)->get($baseUrl.$endpoint, $queryParams);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('TikTok Shop Video Performance API Error', [
                     'shop_id' => $shop->shop_id,
                     'video_id' => $videoId,
                     'status' => $response->status(),
                     'response' => $response->body(),
-                    'query_params' => $queryParams
+                    'query_params' => $queryParams,
                 ]);
 
                 return $this->errorResponse(
-                    'Lỗi khi gọi TikTok Shop API: ' . $response->status() . '. Kiểm tra shop_cipher và app_key có đúng không',
+                    'Lỗi khi gọi TikTok Shop API: '.$response->status().'. Kiểm tra shop_cipher và app_key có đúng không',
                     500
                 );
             }
@@ -465,29 +450,29 @@ class ShopVideosAnalyticsController extends Controller
                 'date_range' => [
                     'start_date' => $request->get('start_date_ge'),
                     'end_date' => $request->get('end_date_lt'),
-                    'latest_available_date' => $transformedData['latest_available_date'] ?? null
+                    'latest_available_date' => $transformedData['latest_available_date'] ?? null,
                 ],
                 'filters' => [
                     'currency' => $currency,
                     'with_comparison' => $withComparison,
-                    'granularity' => $granularity
+                    'granularity' => $granularity,
                 ],
                 'shop_id' => $shop->shop_id,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: ' . implode(', ', $e->errors()), 422);
+            return $this->errorResponse('Dữ liệu đầu vào không hợp lệ: '.implode(', ', $e->errors()), 422);
         } catch (\Exception $e) {
             Log::error('Video Performance By ID Error', [
                 'video_id' => $videoId,
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
             ]);
 
             return $this->errorResponse(
-                'Lỗi hệ thống: ' . $e->getMessage() . '. Vui lòng thử lại sau hoặc liên hệ admin',
+                'Lỗi hệ thống: '.$e->getMessage().'. Vui lòng thử lại sau hoặc liên hệ admin',
                 500
             );
         }
@@ -495,9 +480,6 @@ class ShopVideosAnalyticsController extends Controller
 
     /**
      * Get videos by product
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getVideosByProduct(Request $request): JsonResponse
     {
@@ -507,14 +489,14 @@ class ShopVideosAnalyticsController extends Controller
                 'end_date_lt' => 'required|date|date_format:Y-m-d|after:start_date_ge',
                 'shop_cipher' => 'required|string',
                 'app_key' => 'required|string',
-                'product_id' => 'required|string'
+                'product_id' => 'required|string',
             ]);
 
             // Get all videos data
             $request->merge(['page_size' => 100]);
             $performanceResponse = $this->getVideosPerformance($request);
-            
-            if (!$performanceResponse->getData()->success) {
+
+            if (! $performanceResponse->getData()->success) {
                 return $performanceResponse;
             }
 
@@ -523,16 +505,17 @@ class ShopVideosAnalyticsController extends Controller
 
             // Filter videos by product ID
             $productId = $request->get('product_id');
-            $filteredVideos = array_filter($allVideos, function($video) use ($productId) {
-                if (!isset($video['products']) || !is_array($video['products'])) {
+            $filteredVideos = array_filter($allVideos, function ($video) use ($productId) {
+                if (! isset($video['products']) || ! is_array($video['products'])) {
                     return false;
                 }
-                
+
                 foreach ($video['products'] as $product) {
                     if (isset($product['id']) && $product['id'] === $productId) {
                         return true;
                     }
                 }
+
                 return false;
             });
 
@@ -545,28 +528,25 @@ class ShopVideosAnalyticsController extends Controller
                 'date_range' => $data->date_range,
                 'total_found' => count($filteredVideos),
                 'shop_id' => $data->shop_id ?? null,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Videos By Product Error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy videos theo product: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy videos theo product: '.$e->getMessage(), 500);
         }
     }
 
     /**
      * Transform TikTok Shop API overview response data
-     *
-     * @param array $data
-     * @return array
      */
     private function transformVideosOverviewData(array $data): array
     {
-        if (!isset($data['data']['performance'])) {
+        if (! isset($data['data']['performance'])) {
             return $data['data'] ?? [];
         }
 
@@ -586,21 +566,21 @@ class ShopVideosAnalyticsController extends Controller
                         'formatted' => $this->formatCurrency(
                             floatval($interval['gmv']['amount'] ?? 0),
                             $interval['gmv']['currency'] ?? 'USD'
-                        )
+                        ),
                     ],
                     'click_through_rate' => [
                         'rate' => floatval($interval['click_through_rate'] ?? 0),
-                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2) . '%'
+                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2).'%',
                     ],
                     'orders' => [
                         'count' => intval($interval['sku_orders'] ?? 0),
-                        'formatted' => number_format($interval['sku_orders'] ?? 0)
+                        'formatted' => number_format($interval['sku_orders'] ?? 0),
                     ],
                     'units_sold' => [
                         'count' => intval($interval['units_sold'] ?? 0),
-                        'formatted' => number_format($interval['units_sold'] ?? 0)
+                        'formatted' => number_format($interval['units_sold'] ?? 0),
                     ],
-                    'performance_metrics' => $this->calculateOverviewMetrics($interval)
+                    'performance_metrics' => $this->calculateOverviewMetrics($interval),
                 ];
             }
         }
@@ -617,21 +597,21 @@ class ShopVideosAnalyticsController extends Controller
                         'formatted' => $this->formatCurrency(
                             floatval($interval['gmv']['amount'] ?? 0),
                             $interval['gmv']['currency'] ?? 'USD'
-                        )
+                        ),
                     ],
                     'click_through_rate' => [
                         'rate' => floatval($interval['click_through_rate'] ?? 0),
-                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2) . '%'
+                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2).'%',
                     ],
                     'orders' => [
                         'count' => intval($interval['sku_orders'] ?? 0),
-                        'formatted' => number_format($interval['sku_orders'] ?? 0)
+                        'formatted' => number_format($interval['sku_orders'] ?? 0),
                     ],
                     'units_sold' => [
                         'count' => intval($interval['units_sold'] ?? 0),
-                        'formatted' => number_format($interval['units_sold'] ?? 0)
+                        'formatted' => number_format($interval['units_sold'] ?? 0),
                     ],
-                    'performance_metrics' => $this->calculateOverviewMetrics($interval)
+                    'performance_metrics' => $this->calculateOverviewMetrics($interval),
                 ];
             }
         }
@@ -639,15 +619,12 @@ class ShopVideosAnalyticsController extends Controller
         return [
             'performance' => $transformedPerformance,
             'comparison_intervals' => $transformedComparison,
-            'latest_available_date' => $data['data']['latest_available_date'] ?? null
+            'latest_available_date' => $data['data']['latest_available_date'] ?? null,
         ];
     }
 
     /**
      * Calculate overview performance metrics
-     *
-     * @param array $interval
-     * @return array
      */
     private function calculateOverviewMetrics(array $interval): array
     {
@@ -661,23 +638,20 @@ class ShopVideosAnalyticsController extends Controller
             'average_order_value' => [
                 'amount' => $orders > 0 ? $gmv / $orders : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($orders > 0 ? $gmv / $orders : 0, $currency)
+                'formatted' => $this->formatCurrency($orders > 0 ? $gmv / $orders : 0, $currency),
             ],
             'units_per_order' => $orders > 0 ? round($units / $orders, 2) : 0,
             'gmv_per_unit' => [
                 'amount' => $units > 0 ? $gmv / $units : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($units > 0 ? $gmv / $units : 0, $currency)
+                'formatted' => $this->formatCurrency($units > 0 ? $gmv / $units : 0, $currency),
             ],
-            'conversion_efficiency' => $this->calculateConversionEfficiency($interval)
+            'conversion_efficiency' => $this->calculateConversionEfficiency($interval),
         ];
     }
 
     /**
      * Calculate conversion efficiency score
-     *
-     * @param array $interval
-     * @return float
      */
     private function calculateConversionEfficiency(array $interval): float
     {
@@ -688,27 +662,23 @@ class ShopVideosAnalyticsController extends Controller
 
         // Simple efficiency score calculation
         $score = 0;
-        
+
         if ($orders > 0) {
             $score += min(($gmv / 1000), 40); // GMV weight (capped at 40)
             $score += min(($orders / 10), 30); // Orders weight (capped at 30)
             $score += min(($units / 10), 20); // Units weight (capped at 20)
             $score += min(($ctr * 10), 10); // CTR weight (capped at 10)
         }
-        
+
         return round(min($score, 100), 2); // Cap at 100
     }
 
     /**
      * Transform TikTok Shop API video performance by ID response data
-     *
-     * @param array $data
-     * @param string $videoId
-     * @return array
      */
     private function transformVideoPerformanceByIdData(array $data, string $videoId): array
     {
-        if (!isset($data['data']['performance'])) {
+        if (! isset($data['data']['performance'])) {
             return $data['data'] ?? [];
         }
 
@@ -728,21 +698,21 @@ class ShopVideosAnalyticsController extends Controller
                         'formatted' => $this->formatCurrency(
                             floatval($interval['gmv']['amount'] ?? 0),
                             $interval['gmv']['currency'] ?? 'USD'
-                        )
+                        ),
                     ],
                     'click_through_rate' => [
                         'rate' => floatval($interval['click_through_rate'] ?? 0),
-                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2) . '%'
+                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2).'%',
                     ],
                     'daily_avg_buyers' => [
                         'count' => floatval($interval['daily_avg_buyers'] ?? 0),
-                        'formatted' => number_format(floatval($interval['daily_avg_buyers'] ?? 0), 2)
+                        'formatted' => number_format(floatval($interval['daily_avg_buyers'] ?? 0), 2),
                     ],
                     'views' => [
                         'count' => intval($interval['views'] ?? 0),
-                        'formatted' => number_format($interval['views'] ?? 0)
+                        'formatted' => number_format($interval['views'] ?? 0),
                     ],
-                    'performance_metrics' => $this->calculateVideoPerformanceMetrics($interval)
+                    'performance_metrics' => $this->calculateVideoPerformanceMetrics($interval),
                 ];
             }
         }
@@ -759,21 +729,21 @@ class ShopVideosAnalyticsController extends Controller
                         'formatted' => $this->formatCurrency(
                             floatval($interval['gmv']['amount'] ?? 0),
                             $interval['gmv']['currency'] ?? 'USD'
-                        )
+                        ),
                     ],
                     'click_through_rate' => [
                         'rate' => floatval($interval['click_through_rate'] ?? 0),
-                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2) . '%'
+                        'formatted' => number_format(floatval($interval['click_through_rate'] ?? 0), 2).'%',
                     ],
                     'daily_avg_buyers' => [
                         'count' => floatval($interval['daily_avg_buyers'] ?? 0),
-                        'formatted' => number_format(floatval($interval['daily_avg_buyers'] ?? 0), 2)
+                        'formatted' => number_format(floatval($interval['daily_avg_buyers'] ?? 0), 2),
                     ],
                     'views' => [
                         'count' => intval($interval['views'] ?? 0),
-                        'formatted' => number_format($interval['views'] ?? 0)
+                        'formatted' => number_format($interval['views'] ?? 0),
                     ],
-                    'performance_metrics' => $this->calculateVideoPerformanceMetrics($interval)
+                    'performance_metrics' => $this->calculateVideoPerformanceMetrics($interval),
                 ];
             }
         }
@@ -785,21 +755,21 @@ class ShopVideosAnalyticsController extends Controller
             $engagementData = [
                 'total_likes' => [
                     'count' => intval($engagement['total_likes'] ?? 0),
-                    'formatted' => number_format($engagement['total_likes'] ?? 0)
+                    'formatted' => number_format($engagement['total_likes'] ?? 0),
                 ],
                 'total_shares' => [
                     'count' => intval($engagement['total_shares'] ?? 0),
-                    'formatted' => number_format($engagement['total_shares'] ?? 0)
+                    'formatted' => number_format($engagement['total_shares'] ?? 0),
                 ],
                 'total_comments' => [
                     'count' => intval($engagement['total_comments'] ?? 0),
-                    'formatted' => number_format($engagement['total_comments'] ?? 0)
+                    'formatted' => number_format($engagement['total_comments'] ?? 0),
                 ],
                 'total_views' => [
                     'count' => intval($engagement['total_views'] ?? 0),
-                    'formatted' => number_format($engagement['total_views'] ?? 0)
+                    'formatted' => number_format($engagement['total_views'] ?? 0),
                 ],
-                'engagement_metrics' => $this->calculateEngagementMetrics($engagement)
+                'engagement_metrics' => $this->calculateEngagementMetrics($engagement),
             ];
         }
 
@@ -808,7 +778,7 @@ class ShopVideosAnalyticsController extends Controller
         if (isset($performance['video_post_time'])) {
             $videoInfo = [
                 'video_post_time' => $performance['video_post_time'],
-                'video_post_date' => $this->formatVideoPostDate($performance['video_post_time'])
+                'video_post_date' => $this->formatVideoPostDate($performance['video_post_time']),
             ];
         }
 
@@ -817,15 +787,12 @@ class ShopVideosAnalyticsController extends Controller
             'comparison_intervals' => $transformedComparison,
             'engagement_data' => $engagementData,
             'video_info' => $videoInfo,
-            'latest_available_date' => $data['data']['latest_available_date'] ?? null
+            'latest_available_date' => $data['data']['latest_available_date'] ?? null,
         ];
     }
 
     /**
      * Calculate video performance metrics
-     *
-     * @param array $interval
-     * @return array
      */
     private function calculateVideoPerformanceMetrics(array $interval): array
     {
@@ -839,19 +806,16 @@ class ShopVideosAnalyticsController extends Controller
             'gmv_per_view' => [
                 'amount' => $views > 0 ? $gmv / $views : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($views > 0 ? $gmv / $views : 0, $currency)
+                'formatted' => $this->formatCurrency($views > 0 ? $gmv / $views : 0, $currency),
             ],
             'buyer_conversion_rate' => $views > 0 ? round(($dailyAvgBuyers / $views) * 100, 2) : 0,
             'engagement_rate' => $views > 0 ? round($ctr, 2) : 0,
-            'performance_score' => $this->calculateVideoPerformanceScore($interval)
+            'performance_score' => $this->calculateVideoPerformanceScore($interval),
         ];
     }
 
     /**
      * Calculate engagement metrics
-     *
-     * @param array $engagement
-     * @return array
      */
     private function calculateEngagementMetrics(array $engagement): array
     {
@@ -865,15 +829,12 @@ class ShopVideosAnalyticsController extends Controller
             'share_rate' => $views > 0 ? round(($shares / $views) * 100, 2) : 0,
             'comment_rate' => $views > 0 ? round(($comments / $views) * 100, 2) : 0,
             'total_engagement' => $likes + $shares + $comments,
-            'engagement_score' => $this->calculateEngagementScore($engagement)
+            'engagement_score' => $this->calculateEngagementScore($engagement),
         ];
     }
 
     /**
      * Calculate video performance score
-     *
-     * @param array $interval
-     * @return float
      */
     private function calculateVideoPerformanceScore(array $interval): float
     {
@@ -883,27 +844,23 @@ class ShopVideosAnalyticsController extends Controller
         $ctr = floatval($interval['click_through_rate'] ?? 0);
 
         $score = 0;
-        
+
         if ($views > 0) {
             $score += min(($gmv / 1000), 30); // GMV weight (capped at 30)
             $score += min(($views / 10000), 25); // Views weight (capped at 25)
             $score += min(($dailyAvgBuyers / 100), 25); // Buyers weight (capped at 25)
             $score += min(($ctr * 10), 20); // CTR weight (capped at 20)
         }
-        
+
         return round(min($score, 100), 2); // Cap at 100
     }
 
-
     /**
      * Transform TikTok Shop API response data
-     *
-     * @param array $data
-     * @return array
      */
     private function transformVideosPerformanceData(array $data): array
     {
-        if (!isset($data['data']['videos'])) {
+        if (! isset($data['data']['videos'])) {
             return $data['data'] ?? [];
         }
 
@@ -921,28 +878,28 @@ class ShopVideosAnalyticsController extends Controller
                     'formatted' => $this->formatCurrency(
                         floatval($video['gmv']['amount'] ?? 0),
                         $video['gmv']['currency'] ?? 'USD'
-                    )
+                    ),
                 ],
                 'orders' => [
                     'count' => intval($video['sku_orders'] ?? 0),
-                    'formatted' => number_format($video['sku_orders'] ?? 0)
+                    'formatted' => number_format($video['sku_orders'] ?? 0),
                 ],
                 'units_sold' => [
                     'count' => intval($video['units_sold'] ?? 0),
-                    'formatted' => number_format($video['units_sold'] ?? 0)
+                    'formatted' => number_format($video['units_sold'] ?? 0),
                 ],
                 'views' => [
                     'count' => intval($video['views'] ?? 0),
-                    'formatted' => number_format($video['views'] ?? 0)
+                    'formatted' => number_format($video['views'] ?? 0),
                 ],
                 'click_through_rate' => [
                     'rate' => floatval($video['click_through_rate'] ?? 0),
-                    'formatted' => number_format(floatval($video['click_through_rate'] ?? 0), 2) . '%'
+                    'formatted' => number_format(floatval($video['click_through_rate'] ?? 0), 2).'%',
                 ],
                 'products' => $this->transformProducts($video['products'] ?? []),
                 'video_post_time' => $video['video_post_time'] ?? null,
                 'video_post_date' => $this->formatVideoPostDate($video['video_post_time'] ?? null),
-                'performance_metrics' => $this->calculateVideoMetrics($video)
+                'performance_metrics' => $this->calculateVideoMetrics($video),
             ];
         }
 
@@ -950,36 +907,30 @@ class ShopVideosAnalyticsController extends Controller
             'videos' => $transformedVideos,
             'next_page_token' => $data['data']['next_page_token'] ?? null,
             'total_count' => $data['data']['total_count'] ?? 0,
-            'latest_available_date' => $data['data']['latest_available_date'] ?? null
+            'latest_available_date' => $data['data']['latest_available_date'] ?? null,
         ];
     }
 
     /**
      * Transform products data
-     *
-     * @param array $products
-     * @return array
      */
     private function transformProducts(array $products): array
     {
         $transformedProducts = [];
-        
+
         foreach ($products as $product) {
             $transformedProducts[] = [
                 'product_id' => $product['id'] ?? null,
                 'name' => $product['name'] ?? '',
-                'display_name' => $this->truncateText($product['name'] ?? '', 50)
+                'display_name' => $this->truncateText($product['name'] ?? '', 50),
             ];
         }
-        
+
         return $transformedProducts;
     }
 
     /**
      * Calculate video performance metrics
-     *
-     * @param array $video
-     * @return array
      */
     private function calculateVideoMetrics(array $video): array
     {
@@ -994,24 +945,21 @@ class ShopVideosAnalyticsController extends Controller
             'average_order_value' => [
                 'amount' => $orders > 0 ? $gmv / $orders : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($orders > 0 ? $gmv / $orders : 0, $currency)
+                'formatted' => $this->formatCurrency($orders > 0 ? $gmv / $orders : 0, $currency),
             ],
             'conversion_rate' => $views > 0 ? round(($orders / $views) * 100, 2) : 0,
             'units_per_order' => $orders > 0 ? round($units / $orders, 2) : 0,
             'revenue_per_view' => [
                 'amount' => $views > 0 ? $gmv / $views : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($views > 0 ? $gmv / $views : 0, $currency)
+                'formatted' => $this->formatCurrency($views > 0 ? $gmv / $views : 0, $currency),
             ],
-            'engagement_score' => $this->calculateEngagementScore($video)
+            'engagement_score' => $this->calculateEngagementScore($video),
         ];
     }
 
     /**
      * Calculate engagement score for video
-     *
-     * @param array $video
-     * @return float
      */
     private function calculateEngagementScore(array $video): float
     {
@@ -1023,21 +971,18 @@ class ShopVideosAnalyticsController extends Controller
 
         // Simple engagement score calculation
         $score = 0;
-        
+
         if ($views > 0) {
             $score += ($orders / $views) * 40; // Conversion rate weight
             $score += ($ctr / 100) * 30; // CTR weight
             $score += min(($gmv / 1000), 30); // GMV weight (capped at 30)
         }
-        
+
         return round(min($score, 100), 2); // Cap at 100
     }
 
     /**
      * Calculate summary statistics for videos
-     *
-     * @param array $videos
-     * @return array
      */
     private function calculateVideosSummary(array $videos): array
     {
@@ -1052,7 +997,7 @@ class ShopVideosAnalyticsController extends Controller
                 'average_views_per_video' => 0,
                 'average_ctr' => 0,
                 'top_video' => null,
-                'total_videos' => 0
+                'total_videos' => 0,
             ];
         }
 
@@ -1090,7 +1035,7 @@ class ShopVideosAnalyticsController extends Controller
             'total_gmv' => [
                 'amount' => $totalGmv,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($totalGmv, $currency)
+                'formatted' => $this->formatCurrency($totalGmv, $currency),
             ],
             'total_orders' => $totalOrders,
             'total_units_sold' => $totalUnits,
@@ -1098,68 +1043,58 @@ class ShopVideosAnalyticsController extends Controller
             'average_gmv_per_video' => [
                 'amount' => $videoCount > 0 ? $totalGmv / $videoCount : 0,
                 'currency' => $currency,
-                'formatted' => $this->formatCurrency($videoCount > 0 ? $totalGmv / $videoCount : 0, $currency)
+                'formatted' => $this->formatCurrency($videoCount > 0 ? $totalGmv / $videoCount : 0, $currency),
             ],
             'average_orders_per_video' => $videoCount > 0 ? round($totalOrders / $videoCount, 2) : 0,
             'average_views_per_video' => $videoCount > 0 ? round($totalViews / $videoCount, 2) : 0,
             'average_ctr' => $videoCount > 0 ? round($totalCtr / $videoCount, 2) : 0,
             'top_video' => $topVideo,
-            'total_videos' => $videoCount
+            'total_videos' => $videoCount,
         ];
     }
 
     /**
      * Format video post date
-     *
-     * @param string|null $postTime
-     * @return array|null
      */
     private function formatVideoPostDate(?string $postTime): ?array
     {
-        if (!$postTime) {
+        if (! $postTime) {
             return null;
         }
 
         try {
             $date = Carbon::parse($postTime);
+
             return [
                 'raw' => $postTime,
                 'formatted' => $date->format('M d, Y H:i'),
                 'relative' => $date->diffForHumans(),
-                'timestamp' => $date->timestamp
+                'timestamp' => $date->timestamp,
             ];
         } catch (\Exception $e) {
             return [
                 'raw' => $postTime,
                 'formatted' => $postTime,
                 'relative' => 'Unknown',
-                'timestamp' => null
+                'timestamp' => null,
             ];
         }
     }
 
     /**
      * Truncate text to specified length
-     *
-     * @param string $text
-     * @param int $length
-     * @return string
      */
     private function truncateText(string $text, int $length): string
     {
         if (strlen($text) <= $length) {
             return $text;
         }
-        
-        return substr($text, 0, $length) . '...';
+
+        return substr($text, 0, $length).'...';
     }
 
     /**
      * Format currency amount
-     *
-     * @param float $amount
-     * @param string $currency
-     * @return string
      */
     private function formatCurrency(float $amount, string $currency = 'USD'): string
     {
@@ -1167,31 +1102,28 @@ class ShopVideosAnalyticsController extends Controller
             'USD' => '$',
             'VND' => '₫',
             'EUR' => '€',
-            'GBP' => '£'
+            'GBP' => '£',
         ];
 
-        $symbol = $symbols[$currency] ?? $currency . ' ';
-        return $symbol . number_format($amount, 2);
+        $symbol = $symbols[$currency] ?? $currency.' ';
+
+        return $symbol.number_format($amount, 2);
     }
 
     /**
      * Generate signature for TikTok Shop API
      * Note: This is a simplified version. In production, implement proper HMAC-SHA256
-     *
-     * @param array $params
-     * @param string $secret
-     * @return string
      */
     private function generateSignature(array $params, string $secret): string
     {
         // Sort parameters
         ksort($params);
-        
+
         // Create query string
         $queryString = http_build_query($params);
-        
+
         // In production, implement proper HMAC-SHA256 signature
         // For now, return a mock signature
-        return hash('sha256', $queryString . $secret);
+        return hash('sha256', $queryString.$secret);
     }
 }

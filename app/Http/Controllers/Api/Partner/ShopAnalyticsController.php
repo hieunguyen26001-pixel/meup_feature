@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Partner;
 
 use App\Http\Controllers\Controller;
-use App\Traits\ApiResponseTrait;
 use App\Services\TikTokShopTokenService;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +27,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -46,17 +46,17 @@ class ShopAnalyticsController extends Controller
                     'Số đơn hàng',
                     'Tỷ lệ chuyển đổi',
                     'Đánh giá trung bình',
-                    'Top sản phẩm bán chạy'
-                ]
+                    'Top sản phẩm bán chạy',
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Shop overview analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi phân tích tổng quan shop: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi phân tích tổng quan shop: '.$e->getMessage(), 500);
         }
     }
 
@@ -67,7 +67,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -78,16 +78,16 @@ class ShopAnalyticsController extends Controller
                 'message' => 'Dữ liệu hiệu suất shop',
                 'shop_id' => $shopId,
                 'data' => $performanceData,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Shop performance analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy dữ liệu hiệu suất shop: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy dữ liệu hiệu suất shop: '.$e->getMessage(), 500);
         }
     }
 
@@ -98,7 +98,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -117,17 +117,17 @@ class ShopAnalyticsController extends Controller
                     'Top sản phẩm bán chạy',
                     'Sản phẩm có tỷ lệ hoàn trả cao',
                     'Phân tích giá cả',
-                    'Phân tích danh mục'
-                ]
+                    'Phân tích danh mục',
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Product analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi phân tích sản phẩm: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi phân tích sản phẩm: '.$e->getMessage(), 500);
         }
     }
 
@@ -139,12 +139,12 @@ class ShopAnalyticsController extends Controller
         try {
             $shopId = $request->get('shop_id');
             $productId = $request->get('product_id');
-            
-            if (!$shopId) {
+
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
-            
-            if (!$productId) {
+
+            if (! $productId) {
                 return $this->errorResponse('Product ID là bắt buộc', 400);
             }
 
@@ -156,17 +156,17 @@ class ShopAnalyticsController extends Controller
                 'shop_id' => $shopId,
                 'product_id' => $productId,
                 'data' => $performanceData,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Product performance analytics error', [
                 'error' => $e->getMessage(),
                 'shop_id' => $request->get('shop_id'),
-                'product_id' => $request->get('product_id')
+                'product_id' => $request->get('product_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy dữ liệu hiệu suất sản phẩm: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy dữ liệu hiệu suất sản phẩm: '.$e->getMessage(), 500);
         }
     }
 
@@ -177,8 +177,8 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            
-            if (!$shopId) {
+
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -189,16 +189,16 @@ class ShopAnalyticsController extends Controller
                 'message' => 'Danh sách hiệu suất sản phẩm',
                 'shop_id' => $shopId,
                 'data' => $performanceData,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Products performance list analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy danh sách hiệu suất sản phẩm: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy danh sách hiệu suất sản phẩm: '.$e->getMessage(), 500);
         }
     }
 
@@ -209,7 +209,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -220,16 +220,16 @@ class ShopAnalyticsController extends Controller
                 'message' => 'Dữ liệu phân tích video',
                 'shop_id' => $shopId,
                 'data' => $videoData,
-                'source' => 'tiktok_api'
+                'source' => 'tiktok_api',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Video analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi phân tích video: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi phân tích video: '.$e->getMessage(), 500);
         }
     }
 
@@ -240,13 +240,13 @@ class ShopAnalyticsController extends Controller
     {
         // Get valid token
         $token = $this->tokenService->getValidToken($shopId);
-        if (!$token) {
+        if (! $token) {
             throw new \Exception('Không có token hợp lệ. Vui lòng ủy quyền lại.');
         }
 
         // Get shop info
         $shop = \App\Models\Shop::where('shop_id', $shopId)->first();
-        if (!$shop) {
+        if (! $shop) {
             throw new \Exception('Không tìm thấy thông tin shop');
         }
 
@@ -254,20 +254,20 @@ class ShopAnalyticsController extends Controller
         // Use recent dates (last 30 days) as TikTok API may not have data for old dates
         $startDate = $request->get('start_date_ge', date('Y-m-d', strtotime('-30 days')));
         $endDate = $request->get('end_date_lt', date('Y-m-d', strtotime('-1 day')));
-        
+
         // Ensure dates are in correct format (YYYY-MM-DD)
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
             $startDate = date('Y-m-d', strtotime($startDate));
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
             $endDate = date('Y-m-d', strtotime($endDate));
         }
-        
+
         // Ensure end date is not in the future
         if (strtotime($endDate) > time()) {
             $endDate = date('Y-m-d', strtotime('-1 day'));
         }
-        
+
         $params = [
             'shop_cipher' => $shop->seller_cipher,
             'app_key' => config('services.tiktok_shop.client_key'),
@@ -296,8 +296,7 @@ class ShopAnalyticsController extends Controller
         );
 
         // Build URL
-        $url = 'https://open-api.tiktokglobalshop.com/analytics/202409/shop_videos/performance?' . http_build_query($signatureData['signed_query']);
-
+        $url = 'https://open-api.tiktokglobalshop.com/analytics/202409/shop_videos/performance?'.http_build_query($signatureData['signed_query']);
 
         // Make API request
         $response = Http::withHeaders([
@@ -305,15 +304,14 @@ class ShopAnalyticsController extends Controller
             'x-tts-access-token' => $token->access_token,
         ])->get($url);
 
-        if (!$response->successful()) {
-            throw new \Exception('Yêu cầu API thất bại: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Yêu cầu API thất bại: '.$response->body());
         }
 
         $data = $response->json();
-        
 
-        if (!$data || !isset($data['code']) || $data['code'] !== 0) {
-            throw new \Exception('API trả về lỗi: ' . json_encode($data));
+        if (! $data || ! isset($data['code']) || $data['code'] !== 0) {
+            throw new \Exception('API trả về lỗi: '.json_encode($data));
         }
 
         return $data;
@@ -326,13 +324,13 @@ class ShopAnalyticsController extends Controller
     {
         // Get valid token
         $token = $this->tokenService->getValidToken($shopId);
-        if (!$token) {
+        if (! $token) {
             throw new \Exception('Không có token hợp lệ. Vui lòng ủy quyền lại.');
         }
 
         // Get shop info
         $shop = \App\Models\Shop::where('shop_id', $shopId)->first();
-        if (!$shop) {
+        if (! $shop) {
             throw new \Exception('Không tìm thấy thông tin shop');
         }
 
@@ -340,25 +338,25 @@ class ShopAnalyticsController extends Controller
         // Use more recent dates as TikTok API may not have data for old dates
         $startDate = $request->get('start_date_ge', date('Y-m-d', strtotime('-7 days')));
         $endDate = $request->get('end_date_lt', date('Y-m-d', strtotime('-1 day')));
-        
+
         // Ensure dates are in correct format (YYYY-MM-DD)
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
             $startDate = date('Y-m-d', strtotime($startDate));
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
             $endDate = date('Y-m-d', strtotime($endDate));
         }
-        
+
         // Ensure end date is not in the future and not too recent
         if (strtotime($endDate) > time()) {
             $endDate = date('Y-m-d', strtotime('-1 day'));
         }
-        
+
         // Ensure start date is not too far in the past (TikTok API limitation)
         if (strtotime($startDate) < strtotime('-90 days')) {
             $startDate = date('Y-m-d', strtotime('-7 days'));
         }
-        
+
         $params = [
             'shop_cipher' => $shop->seller_cipher,
             'app_key' => config('services.tiktok_shop.client_key'),
@@ -380,7 +378,7 @@ class ShopAnalyticsController extends Controller
         );
 
         // Build URL
-        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop/performance?' . http_build_query($signatureData['signed_query']);
+        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop/performance?'.http_build_query($signatureData['signed_query']);
 
         // Make API request
         $response = Http::withHeaders([
@@ -388,26 +386,26 @@ class ShopAnalyticsController extends Controller
             'x-tts-access-token' => $token->access_token,
         ])->get($url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('TikTok Shop Performance API failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'url' => $url,
-                'params' => $params
+                'params' => $params,
             ]);
-            
+
             $errorData = $response->json();
             if (isset($errorData['code']) && $errorData['code'] == 106011) {
                 throw new \Exception('Shop cipher không hợp lệ. Vui lòng ủy quyền lại shop để lấy shop_cipher thực từ TikTok Shop.');
             }
-            
-            throw new \Exception('Yêu cầu API thất bại: ' . $response->body());
+
+            throw new \Exception('Yêu cầu API thất bại: '.$response->body());
         }
 
         $data = $response->json();
-        
-        if (!$data || !isset($data['code']) || $data['code'] !== 0) {
-            throw new \Exception('API trả về lỗi: ' . json_encode($data));
+
+        if (! $data || ! isset($data['code']) || $data['code'] !== 0) {
+            throw new \Exception('API trả về lỗi: '.json_encode($data));
         }
 
         return $data;
@@ -420,13 +418,13 @@ class ShopAnalyticsController extends Controller
     {
         // Get valid token
         $token = $this->tokenService->getValidToken($shopId);
-        if (!$token) {
+        if (! $token) {
             throw new \Exception('Không có token hợp lệ. Vui lòng ủy quyền lại.');
         }
 
         // Get shop info
         $shop = \App\Models\Shop::where('shop_id', $shopId)->first();
-        if (!$shop) {
+        if (! $shop) {
             throw new \Exception('Không tìm thấy thông tin shop');
         }
 
@@ -434,25 +432,25 @@ class ShopAnalyticsController extends Controller
         // Use more recent dates as TikTok API may not have data for old dates
         $startDate = $request->get('start_date_ge', date('Y-m-d', strtotime('-7 days')));
         $endDate = $request->get('end_date_lt', date('Y-m-d', strtotime('-1 day')));
-        
+
         // Ensure dates are in correct format (YYYY-MM-DD)
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
             $startDate = date('Y-m-d', strtotime($startDate));
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
             $endDate = date('Y-m-d', strtotime($endDate));
         }
-        
+
         // Ensure end date is not in the future and not too recent
         if (strtotime($endDate) > time()) {
             $endDate = date('Y-m-d', strtotime('-1 day'));
         }
-        
+
         // Ensure start date is not too far in the past (TikTok API limitation)
         if (strtotime($startDate) < strtotime('-90 days')) {
             $startDate = date('Y-m-d', strtotime('-7 days'));
         }
-        
+
         $params = [
             'shop_cipher' => $shop->seller_cipher,
             'app_key' => config('services.tiktok_shop.client_key'),
@@ -467,14 +465,14 @@ class ShopAnalyticsController extends Controller
         // Generate signature using tts_sign method
         $signatureData = $this->tokenService->tts_sign(
             $params,
-            '/analytics/202405/shop_products/' . $productId . '/performance',
+            '/analytics/202405/shop_products/'.$productId.'/performance',
             null,
             'application/json',
             config('services.tiktok_shop.client_secret')
         );
 
         // Build URL
-        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop_products/' . $productId . '/performance?' . http_build_query($signatureData['signed_query']);
+        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop_products/'.$productId.'/performance?'.http_build_query($signatureData['signed_query']);
 
         // Make API request
         $response = Http::withHeaders([
@@ -482,27 +480,27 @@ class ShopAnalyticsController extends Controller
             'x-tts-access-token' => $token->access_token,
         ])->get($url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('TikTok Product Performance API failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'url' => $url,
                 'params' => $params,
-                'product_id' => $productId
+                'product_id' => $productId,
             ]);
-            
+
             $errorData = $response->json();
             if (isset($errorData['code']) && $errorData['code'] == 106011) {
                 throw new \Exception('Shop cipher không hợp lệ. Vui lòng ủy quyền lại shop để lấy shop_cipher thực từ TikTok Shop.');
             }
-            
-            throw new \Exception('Yêu cầu API thất bại: ' . $response->body());
+
+            throw new \Exception('Yêu cầu API thất bại: '.$response->body());
         }
 
         $data = $response->json();
-        
-        if (!$data || !isset($data['code']) || $data['code'] !== 0) {
-            throw new \Exception('API trả về lỗi: ' . json_encode($data));
+
+        if (! $data || ! isset($data['code']) || $data['code'] !== 0) {
+            throw new \Exception('API trả về lỗi: '.json_encode($data));
         }
 
         return $data;
@@ -515,13 +513,13 @@ class ShopAnalyticsController extends Controller
     {
         // Get valid token
         $token = $this->tokenService->getValidToken($shopId);
-        if (!$token) {
+        if (! $token) {
             throw new \Exception('Không có token hợp lệ. Vui lòng ủy quyền lại.');
         }
 
         // Get shop info
         $shop = \App\Models\Shop::where('shop_id', $shopId)->first();
-        if (!$shop) {
+        if (! $shop) {
             throw new \Exception('Không tìm thấy thông tin shop');
         }
 
@@ -529,25 +527,25 @@ class ShopAnalyticsController extends Controller
         // Use more recent dates as TikTok API may not have data for old dates
         $startDate = $request->get('start_date_ge', date('Y-m-d', strtotime('-7 days')));
         $endDate = $request->get('end_date_lt', date('Y-m-d', strtotime('-1 day')));
-        
+
         // Ensure dates are in correct format (YYYY-MM-DD)
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
             $startDate = date('Y-m-d', strtotime($startDate));
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
             $endDate = date('Y-m-d', strtotime($endDate));
         }
-        
+
         // Ensure end date is not in the future and not too recent
         if (strtotime($endDate) > time()) {
             $endDate = date('Y-m-d', strtotime('-1 day'));
         }
-        
+
         // Ensure start date is not too far in the past (TikTok API limitation)
         if (strtotime($startDate) < strtotime('-90 days')) {
             $startDate = date('Y-m-d', strtotime('-7 days'));
         }
-        
+
         $params = [
             'shop_cipher' => $shop->seller_cipher,
             'app_key' => config('services.tiktok_shop.client_key'),
@@ -576,7 +574,7 @@ class ShopAnalyticsController extends Controller
         );
 
         // Build URL
-        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop_products/performance?' . http_build_query($signatureData['signed_query']);
+        $url = 'https://open-api.tiktokglobalshop.com/analytics/202405/shop_products/performance?'.http_build_query($signatureData['signed_query']);
 
         // Make API request
         $response = Http::withHeaders([
@@ -584,26 +582,26 @@ class ShopAnalyticsController extends Controller
             'x-tts-access-token' => $token->access_token,
         ])->get($url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('TikTok Products Performance List API failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'url' => $url,
-                'params' => $params
+                'params' => $params,
             ]);
-            
+
             $errorData = $response->json();
             if (isset($errorData['code']) && $errorData['code'] == 106011) {
                 throw new \Exception('Shop cipher không hợp lệ. Vui lòng ủy quyền lại shop để lấy shop_cipher thực từ TikTok Shop.');
             }
-            
-            throw new \Exception('Yêu cầu API thất bại: ' . $response->body());
+
+            throw new \Exception('Yêu cầu API thất bại: '.$response->body());
         }
 
         $data = $response->json();
-        
-        if (!$data || !isset($data['code']) || $data['code'] !== 0) {
-            throw new \Exception('API trả về lỗi: ' . json_encode($data));
+
+        if (! $data || ! isset($data['code']) || $data['code'] !== 0) {
+            throw new \Exception('API trả về lỗi: '.json_encode($data));
         }
 
         return $data;
@@ -616,7 +614,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -635,17 +633,17 @@ class ShopAnalyticsController extends Controller
                     'Live có lượt xem cao nhất',
                     'Live có doanh thu cao nhất',
                     'Phân tích thời gian live',
-                    'Phân tích tương tác live'
-                ]
+                    'Phân tích tương tác live',
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Live analytics error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi phân tích live: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi phân tích live: '.$e->getMessage(), 500);
         }
     }
 
@@ -665,16 +663,16 @@ class ShopAnalyticsController extends Controller
                 'features' => [
                     'Danh sách shop đã ủy quyền',
                     'Thông tin cơ bản của shop',
-                    'Trạng thái hoạt động'
-                ]
+                    'Trạng thái hoạt động',
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Shop list error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy danh sách shop: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy danh sách shop: '.$e->getMessage(), 500);
         }
     }
 
@@ -685,7 +683,7 @@ class ShopAnalyticsController extends Controller
     {
         try {
             $shopId = $request->get('shop_id');
-            if (!$shopId) {
+            if (! $shopId) {
                 return $this->errorResponse('Shop ID là bắt buộc', 400);
             }
 
@@ -700,17 +698,17 @@ class ShopAnalyticsController extends Controller
                 'features' => [
                     'Thống kê tổng quan',
                     'Biểu đồ dữ liệu',
-                    'So sánh theo thời gian'
-                ]
+                    'So sánh theo thời gian',
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Stats error', [
                 'error' => $e->getMessage(),
-                'shop_id' => $request->get('shop_id')
+                'shop_id' => $request->get('shop_id'),
             ]);
 
-            return $this->errorResponse('Lỗi khi lấy thống kê: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Lỗi khi lấy thống kê: '.$e->getMessage(), 500);
         }
     }
 }

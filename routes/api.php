@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\Api\OrderApiController;
 use App\Http\Controllers\Api\TikTokAuthController;
 use App\Http\Controllers\Api\ShopApiController;
+use App\Http\Controllers\Api\ShopAnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,3 +35,13 @@ Route::get('/orders/stats', [OrderApiController::class, 'stats']);
 // TikTok OAuth routes
 Route::get('/tiktok/authorize', [TikTokAuthController::class, 'authorize']);
 Route::get('/oauth/shop/callback', [TikTokAuthController::class, 'callback']);
+
+// Shop Analytics routes
+Route::prefix('analytics')->group(function () {
+    Route::get('/shops', [ShopAnalyticsController::class, 'shops']);
+    Route::get('/shop/overview', [ShopAnalyticsController::class, 'shopOverview']);
+    Route::get('/products', [ShopAnalyticsController::class, 'productAnalytics']);
+    Route::get('/videos', [ShopAnalyticsController::class, 'videoAnalytics']);
+    Route::get('/live', [ShopAnalyticsController::class, 'liveAnalytics']);
+    Route::get('/stats', [ShopAnalyticsController::class, 'stats']);
+});

@@ -413,10 +413,10 @@
                     <div class="bg-gray-50 p-4 rounded-lg">
                       <h4 class="font-medium text-gray-900 mb-2">Thông tin thanh toán</h4>
                       <div class="space-y-2 text-sm">
-                        <div><span class="font-medium">Tổng tiền:</span> {{ formatPrice(selectedOrder.payment?.total_amount) }}</div>
-                        <div><span class="font-medium">Tiền hàng:</span> {{ formatPrice(selectedOrder.payment?.sub_total) }}</div>
-                        <div><span class="font-medium">Phí vận chuyển:</span> {{ formatPrice(selectedOrder.payment?.shipping_fee) }}</div>
-                        <div><span class="font-medium">Giảm giá:</span> {{ formatPrice(selectedOrder.payment?.seller_discount) }}</div>
+                        <div><span class="font-medium">Tổng tiền:</span> <span v-html="formatPrice(selectedOrder.payment?.total_amount)"></span></div>
+                        <div><span class="font-medium">Tiền hàng:</span> <span v-html="formatPrice(selectedOrder.payment?.sub_total)"></span></div>
+                        <div><span class="font-medium">Phí vận chuyển:</span> <span v-html="formatPrice(selectedOrder.payment?.shipping_fee)"></span></div>
+                        <div><span class="font-medium">Giảm giá:</span> <span v-html="formatPrice(selectedOrder.payment?.seller_discount)"></span></div>
                       </div>
                     </div>
                   </div>
@@ -450,7 +450,7 @@
                           <div class="text-sm text-gray-500">Số lượng: {{ item.sku_count || 1 }}</div>
                         </div>
                         <div class="text-right">
-                          <div class="font-medium">{{ formatPrice(item.sale_price) }}</div>
+                          <div class="font-medium" v-html="formatPrice(item.sale_price)"></div>
                           <div class="text-sm text-gray-500">Trạng thái: {{ getStatusText(item.display_status) }}</div>
                         </div>
                       </div>

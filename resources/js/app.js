@@ -10,6 +10,7 @@ import Cancellations from './pages/Cancellations.vue'
 import Products from './pages/Products.vue'
 import Orders from './pages/Orders.vue'
 import Authorization from './pages/Authorization.vue'
+import ShopAnalytics from './pages/ShopAnalytics.vue'
 import TestPage from './pages/TestPage.vue'
 
 // Import components
@@ -56,6 +57,11 @@ const router = createRouter({
       name: 'orders',
       component: Orders
     },
+    {
+      path: '/admin/shop-analytics',
+      name: 'shop-analytics',
+      component: ShopAnalytics
+    },
     // Redirect new routes to existing ones for now
     {
       path: '/admin/gmv-products',
@@ -83,7 +89,7 @@ const router = createRouter({
     },
     {
       path: '/admin/shop-analytics',
-      redirect: '/admin/dashboard'
+      redirect: '/admin/shop-analytics'
     }
   ]
 })

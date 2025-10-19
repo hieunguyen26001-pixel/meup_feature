@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+rules:
+  tiktok-lafit:
+    description: |
+      Áp dụng theo chuẩn PSR-12, dùng laravel/pint hoặc php-cs-fixer để tự động format PHP code.
+      Đặt tên class (PascalCase), function/biến (camelCase), const (UPPER_SNAKE_CASE) rõ ràng.
+      Bắt buộc khai báo type-hint và return type; tránh nullable không hợp lý.
+      Mỗi hàm ngắn, chỉ thực hiện một nghiệp vụ chính; tách business/service khỏi controller.
+      Validate dữ liệu input và dùng try/catch tại controller hoặc job; lưu log lỗi với context cụ thể.
+      Không hardcode secret/url; mọi thông tin cấu hình qua .env và file config/.
+      Không xây dựng SQL bằng nối chuỗi; bắt buộc dùng prepared statement (Query Builder/Eloquent).
+      Escape output, bật CSRF cho form; không log các thông tin nhạy cảm như token/mật khẩu.
+      Lưu trữ thời gian ở UTC; convert sang timezone user tại UI nếu cần.
+      Khi hiển thị list dữ liệu nên dùng paginate; xử lý N+1 bằng with().
+      Dùng transaction cho nghiệp vụ nhiều bước/thay đổi nhiều bảng.
+      Khi làm HTTP client: phải set timeout, retry/backoff nếu cần; ký request chuẩn (HMAC/timestamp) nếu đối tác yêu cầu.
+      Hiện thực queue/job phải idempotent, có timeout, và thiết lập max_tries.
+    tools:
+      - laravel/pint
+      - php-cs-fixer
+    conventions:
+      - PascalCase cho class, camelCase cho biến/hàm, UPPER_SNAKE_CASE cho hằng số
+      - Code rõ ràng, tách service/service class nếu nghiệp vụ phức tạp
+      - Validate đầu/giữa luồng, try/catch ở boundary, log có context, không log bí mật
+      - Sử dụng Eloquent/Query Builder, tránh nối chuỗi SQL
+      - Không hardcode secret/url, luôn dùng biến môi trường/config
+      - Escape mọi output ở view, enable CSRF Laravel mặc định
+      - Paginate khi list dữ liệu; tránh N+1 với with(), lấy đúng cache/query
+      - Transaction mỗi khi thao tác nhiều bước liên quan dữ liệu
+      - HTTP client (Guzzle): luôn có timeout, retry/backoff nếu API partner không ổn định, ký request khi cần thiết
+      - Queue/job Laravel: chuẩn idempotent, timeout & max_tries, không log bí mật
+
+

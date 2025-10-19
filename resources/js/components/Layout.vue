@@ -327,12 +327,11 @@ export default {
     const onShopChange = () => {
       if (selectedShop.value) {
         // Store selected shop in localStorage
-        localStorage.setItem('selectedShop', selectedShop.value)
+        const shopData = shops.value.find(s => s.shop_id === selectedShop.value)
+        localStorage.setItem('selectedShop', JSON.stringify(shopData))
         
-        // If on products page, reload with new shop
-        if (route.name === 'products') {
-          router.push(`/admin/products?shop_id=${selectedShop.value}`)
-        }
+        // Reload current page to refresh data with new shop
+        window.location.reload()
       }
     }
 
@@ -374,7 +373,13 @@ export default {
       // Load selected shop from localStorage
       const savedShop = localStorage.getItem('selectedShop')
       if (savedShop) {
-        selectedShop.value = savedShop
+        try {
+          const shopData = JSON.parse(savedShop)
+          selectedShop.value = shopData.shop_id
+        } catch (e) {
+          // Fallback for old format
+          selectedShop.value = savedShop
+        }
       }
 
       // Close user menu when clicking outside

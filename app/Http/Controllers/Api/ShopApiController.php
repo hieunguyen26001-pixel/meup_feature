@@ -3,29 +3,34 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\TikTokShopTokenService;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 
 class ShopApiController extends Controller
 {
-    protected $tokenService;
-
-    public function __construct(TikTokShopTokenService $tokenService)
-    {
-        $this->tokenService = $tokenService;
-    }
-
     /**
      * GET /api/shops
      */
     public function index(Request $request)
     {
         try {
-            $shops = $this->tokenService->getAuthorizedShops();
-            
+            $shops = Shop::where('is_active', true)
+                ->with('providerToken')
+                ->get()
+                ->map(function ($shop) {
+                    return [
+                        'shop_id' => $shop->shop_id,
+                        'shop_name' => $shop->shop_name ?: "Shop {$shop->shop_id}",
+                        'region' => $shop->region ?: 'VN',
+                        'seller_cipher' => $shop->seller_cipher,
+                        'is_active' => $shop->is_active,
+                        'has_token' => $shop->providerToken ? true : false
+                    ];
+                });
+
             return response()->json([
                 'success' => true,
-                'data' => $shops
+                'shops' => $shops
             ]);
         } catch (\Exception $e) {
             return response()->json([

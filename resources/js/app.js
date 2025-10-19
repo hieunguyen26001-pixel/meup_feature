@@ -6,12 +6,9 @@ import '../css/app.css'
 
 // Import pages
 import Dashboard from './pages/Dashboard.vue'
-import Cancellations from './pages/Cancellations.vue'
-import Products from './pages/Products.vue'
-import Orders from './pages/Orders.vue'
 import Authorization from './pages/Authorization.vue'
-import ShopAnalytics from './pages/ShopAnalytics.vue'
 import TestPage from './pages/TestPage.vue'
+import ApiExplorerPage from './pages/ApiExplorerPage.vue'
 
 // Import components
 import Layout from './components/Layout.vue'
@@ -33,6 +30,11 @@ const router = createRouter({
       component: TestPage
     },
     {
+      path: '/api-explorer',
+      name: 'api-explorer',
+      component: ApiExplorerPage
+    },
+    {
       path: '/admin/dashboard',
       name: 'dashboard',
       component: Dashboard
@@ -42,55 +44,6 @@ const router = createRouter({
       name: 'authorization',
       component: Authorization
     },
-    {
-      path: '/admin/cancellations',
-      name: 'cancellations',
-      component: Cancellations
-    },
-    {
-      path: '/admin/products',
-      name: 'products',
-      component: Products
-    },
-    {
-      path: '/admin/orders',
-      name: 'orders',
-      component: Orders
-    },
-    {
-      path: '/admin/shop-analytics',
-      name: 'shop-analytics',
-      component: ShopAnalytics
-    },
-    // Redirect new routes to existing ones for now
-    {
-      path: '/admin/gmv-products',
-      redirect: '/admin/products'
-    },
-    {
-      path: '/admin/gmv-live',
-      redirect: '/admin/orders'
-    },
-    {
-      path: '/admin/video-management',
-      redirect: '/admin/products'
-    },
-    {
-      path: '/admin/booking-management',
-      redirect: '/admin/orders'
-    },
-    {
-      path: '/admin/staff-list',
-      redirect: '/admin/dashboard'
-    },
-    {
-      path: '/admin/logistics',
-      redirect: '/admin/orders'
-    },
-    {
-      path: '/admin/shop-analytics',
-      redirect: '/admin/shop-analytics'
-    }
   ]
 })
 

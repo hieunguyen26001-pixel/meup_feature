@@ -1,86 +1,172 @@
 <template>
   <div>
     <!-- Page Header -->
-    <div class="mb-8">
+    <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Quản Lý Đơn Hàng</h1>
       <p class="mt-2 text-gray-600">Quản lý danh sách đơn hàng từ TikTok Shop</p>
-      
-      <!-- Date Range Picker -->
-      <div class="mt-4 flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Từ ngày:</label>
-          <input 
-            v-model="startDate" 
-            type="date" 
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Đến ngày:</label>
-          <input 
-            v-model="endDate" 
-            type="date" 
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <button 
-          @click="applyDateRange"
-          :disabled="loading"
-          class="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md text-sm font-medium"
-        >
-          Áp dụng
-        </button>
-        <button 
-          @click="resetDateRange"
-          class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm font-medium"
-        >
-          Reset
-        </button>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Bộ Lọc & Tìm Kiếm</h3>
       </div>
       
-      <!-- Status Filter -->
-      <div class="mt-4 flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Trạng thái:</label>
-          <select 
-            v-model="selectedStatus" 
-            @change="applyStatusFilter"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="UNPAID">Chưa thanh toán</option>
-            <option value="ON_HOLD">Tạm giữ</option>
-            <option value="AWAITING_SHIPMENT">Chờ vận chuyển</option>
-            <option value="PARTIALLY_SHIPPING">Giao một phần</option>
-            <option value="AWAITING_COLLECTION">Chờ thu gom</option>
-            <option value="IN_TRANSIT">Đang vận chuyển</option>
-            <option value="DELIVERED">Đã giao hàng</option>
-            <option value="COMPLETED">Hoàn thành</option>
-            <option value="CANCELLED">Đã hủy</option>
-          </select>
+      <div class="p-6">
+        <!-- Date Range Picker -->
+        <div class="mb-6">
+          <h4 class="text-sm font-medium text-gray-700 mb-4">Khoảng Thời Gian</h4>
+          <div class="flex items-center space-x-4">
+            <DateRangePicker v-model="dateRange" @update:modelValue="onDateRangeChange" />
+          </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Sắp xếp:</label>
-          <select 
-            v-model="sortField" 
-            @change="applySort"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="create_time">Ngày tạo</option>
-            <option value="update_time">Ngày cập nhật</option>
-            <option value="status">Trạng thái</option>
-            <option value="total_amount">Tổng tiền</option>
-          </select>
-          <select 
-            v-model="sortDirection" 
-            @change="applySort"
-            class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="desc">Giảm dần</option>
-            <option value="asc">Tăng dần</option>
-          </select>
+
+        <!-- Sort Options -->
+            <div class="relative">
+              <div class="flex items-center border border-gray-300 rounded-lg bg-white shadow-sm hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 transition-all duration-200">
+                <div class="flex items-center px-4 py-2.5">
+                  <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span class="text-sm text-gray-600 mr-2">Từ:</span>
+                  <input 
+                    v-model="startDate" 
+                    type="date" 
+                    class="text-sm text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                    placeholder="Chọn ngày bắt đầu"
+                  />
+                </div>
+                
+                <div class="flex items-center px-2">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                  </svg>
+                </div>
+                
+                <div class="flex items-center px-4 py-2.5">
+                  <span class="text-sm text-gray-600 mr-2">Đến:</span>
+                  <input 
+                    v-model="endDate" 
+                    type="date" 
+                    class="text-sm text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0"
+                    placeholder="Chọn ngày kết thúc"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2">
+              <button 
+                @click="applyDateRange"
+                :disabled="loading"
+                class="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium shadow-sm transition-colors duration-200 flex items-center"
+              >
+                <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                {{ loading ? 'Đang tải...' : 'Tìm kiếm' }}
+              </button>
+              
+              <button 
+                @click="resetDateRange"
+                class="px-6 py-2.5 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium shadow-sm transition-colors duration-200 flex items-center"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Date Presets -->
+        <div class="mb-6">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Khoảng Thời Gian Nhanh</h4>
+          <div class="flex flex-wrap gap-2">
+            <button 
+              @click="setDateRange('today')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              Hôm nay
+            </button>
+            <button 
+              @click="setDateRange('yesterday')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              Hôm qua
+            </button>
+            <button 
+              @click="setDateRange('7days')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              7 ngày qua
+            </button>
+            <button 
+              @click="setDateRange('30days')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              30 ngày qua
+            </button>
+            <button 
+              @click="setDateRange('90days')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              90 ngày qua
+            </button>
+            <button 
+              @click="setDateRange('thisMonth')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              Tháng này
+            </button>
+            <button 
+              @click="setDateRange('lastMonth')"
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            >
+              Tháng trước
+            </button>
+          </div>
+        </div>
+
+        <!-- Sort Options -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <label class="text-sm font-medium text-gray-600">Sắp xếp theo:</label>
+              <select 
+                v-model="sortField" 
+                @change="applySort"
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="create_time">Ngày tạo</option>
+                <option value="update_time">Ngày cập nhật</option>
+                <option value="paid_time">Ngày thanh toán</option>
+                <option value="status">Trạng thái</option>
+                <option value="total_amount">Tổng tiền</option>
+              </select>
+              <select 
+                v-model="sortDirection" 
+                @change="applySort"
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="desc">Giảm dần</option>
+                <option value="asc">Tăng dần</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- KPI Dashboard -->
+    <div class="mb-6">
+      <OrderKPIDashboard :orders="orders" />
     </div>
 
     <!-- Orders Table -->
@@ -91,11 +177,11 @@
             <h3 class="text-lg font-medium text-gray-900">Danh Sách Đơn Hàng</h3>
             <p class="text-sm text-gray-500">
               Hiển thị {{ startIndex }} - {{ endIndex }} trong {{ filteredOrdersCount }} đơn hàng
-              <span v-if="selectedShop" class="ml-2 text-blue-600">
-                (Shop: {{ selectedShopName || selectedShop }})
+              <span v-if="selectedShop" class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                Shop: {{ selectedShopName || selectedShop }}
               </span>
-              <span v-if="selectedStatus" class="ml-2 text-green-600">
-                (Đã lọc theo: {{ getStatusText(selectedStatus) }})
+              <span v-if="selectedStatus" class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                {{ getStatusText(selectedStatus) }}
               </span>
             </p>
           </div>
@@ -509,6 +595,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
+import OrderKPIDashboard from '../components/OrderKPIDashboard.vue'
+import DateRangePicker from '../components/DateRangePicker.vue'
 
 // Reactive data
 const orders = ref([])
@@ -531,30 +619,23 @@ const customDateRange = ref(false)
 const selectedStatus = ref('')
 const allOrders = ref([])
 
+// Removed advanced filters as requested
+
 // Order modal
 const showOrderModal = ref(false)
 const selectedOrder = ref(null)
 
 // Computed properties
-const filteredOrdersCount = computed(() => {
+const filteredOrders = computed(() => {
+  let filtered = [...orders.value]
+  
+  // Status filter (if needed)
   if (selectedStatus.value) {
-    return orders.value.filter(order => order.status === selectedStatus.value).length
-  }
-  return totalOrders.value
-})
-
-const totalPages = computed(() => Math.ceil(filteredOrdersCount.value / itemsPerPage.value))
-
-const paginatedOrders = computed(() => {
-  // Apply status filter first
-  let filteredOrders = [...orders.value]
-  if (selectedStatus.value) {
-    filteredOrders = filteredOrders.filter(order => order.status === selectedStatus.value)
+    filtered = filtered.filter(order => order.status === selectedStatus.value)
   }
   
   // Apply sorting
-  let sortedOrders = [...filteredOrders]
-  sortedOrders.sort((a, b) => {
+  filtered.sort((a, b) => {
     const aValue = getFieldValue(a, sortField.value)
     const bValue = getFieldValue(b, sortField.value)
     
@@ -565,10 +646,18 @@ const paginatedOrders = computed(() => {
     }
   })
   
+  return filtered
+})
+
+const filteredOrdersCount = computed(() => filteredOrders.value.length)
+
+const totalPages = computed(() => Math.ceil(filteredOrdersCount.value / itemsPerPage.value))
+
+const paginatedOrders = computed(() => {
   // Apply pagination
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
-  return sortedOrders.slice(start, end)
+  return filteredOrders.value.slice(start, end)
 })
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value + 1)
@@ -601,8 +690,8 @@ const loadOrders = async () => {
     
     // Add date range parameters if custom range is selected
     if (customDateRange.value && startDate.value && endDate.value) {
-      params.create_time_ge = Math.floor(new Date(startDate.value).getTime() / 1000)
-      params.create_time_lt = Math.floor(new Date(endDate.value).getTime() / 1000)
+      params.start_date = startDate.value
+      params.end_date = endDate.value
     }
     
     const response = await axios.get('/api/orders', { params })
@@ -640,8 +729,64 @@ const formatDateForInput = (date) => {
   return new Date(date).toISOString().split('T')[0]
 }
 
-const applyStatusFilter = () => {
+const applyFilters = () => {
   currentPage.value = 1 // Reset to first page when filtering
+}
+
+const resetFilters = () => {
+  selectedStatus.value = ''
+  currentPage.value = 1
+}
+
+const setDateRange = (preset) => {
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  
+  switch (preset) {
+    case 'today':
+      startDate.value = todayStr
+      endDate.value = todayStr
+      break
+    case 'yesterday':
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+      startDate.value = yesterdayStr
+      endDate.value = yesterdayStr
+      break
+    case '7days':
+      const weekAgo = new Date(today)
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      startDate.value = weekAgo.toISOString().split('T')[0]
+      endDate.value = todayStr
+      break
+    case '30days':
+      const monthAgo = new Date(today)
+      monthAgo.setDate(monthAgo.getDate() - 30)
+      startDate.value = monthAgo.toISOString().split('T')[0]
+      endDate.value = todayStr
+      break
+    case '90days':
+      const quarterAgo = new Date(today)
+      quarterAgo.setDate(quarterAgo.getDate() - 90)
+      startDate.value = quarterAgo.toISOString().split('T')[0]
+      endDate.value = todayStr
+      break
+    case 'thisMonth':
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+      startDate.value = firstDay.toISOString().split('T')[0]
+      endDate.value = todayStr
+      break
+    case 'lastMonth':
+      const lastMonthFirst = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const lastMonthLast = new Date(today.getFullYear(), today.getMonth(), 0)
+      startDate.value = lastMonthFirst.toISOString().split('T')[0]
+      endDate.value = lastMonthLast.toISOString().split('T')[0]
+      break
+  }
+  
+  // Auto apply the date range
+  applyDateRange()
 }
 
 const applySort = () => {

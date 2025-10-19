@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ProviderToken;
+use App\Models\Shop;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -660,5 +661,13 @@ class TikTokShopTokenService
                     ->where('refresh_expires_at', '<', now());
             })
             ->delete();
+    }
+
+    /**
+     * Get active shop
+     */
+    public function getActiveShop(): ?Shop
+    {
+        return Shop::where('is_active', true)->first();
     }
 }
